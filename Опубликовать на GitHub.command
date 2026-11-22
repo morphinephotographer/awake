@@ -8,11 +8,10 @@ REPO="morphinephotographer/awake."
   echo "=== $(date) ==="
   [ -d .git ] || git init -b main
   git add -A
-  git commit -q -m "awake. 1.1.0 — notch app that keeps the Mac awake
+  git commit -q -m "awake. $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
 
-Notch panel with power button and durations, analog countdown clock,
-keep-display, closed-lid mode (root guard + pmset disablesleep),
-launch at login, white app icon.
+App icon: wordmark centred vertically. Build script also packs
+the app into dist/awake-<version>.zip.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN" && echo COMMIT_OK || echo NOTHING_TO_COMMIT

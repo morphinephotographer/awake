@@ -30,7 +30,7 @@ def render(fontfile, out, green_dot=True):
         if bb[2]-bb[0] <= size*0.88: break
         fs -= 8; font = ImageFont.truetype(fontfile, fs)
     tw = bb[2]-bb[0]; th = bb[3]-bb[1]
-    x = cx - tw/2 - bb[0]; y = W/2 + size*0.04 - th/2 - bb[1]
+    x = cx - tw/2 - bb[0]; y = W/2 - th/2 - bb[1]
     d.text((x,y), text, font=font, fill=(14,14,16,255))
     wb = d.textbbox((x,y), text, font=font)
     # the dot: green, sits on baseline like a period
