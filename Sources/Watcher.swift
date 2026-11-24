@@ -72,7 +72,7 @@ final class Watcher {
     /// Agents think on servers with the Mac nearly idle — give them longer.
     static let agentGrace: TimeInterval = 180
     /// Weekly catalog refresh. The repository has to be public for other people to receive updates.
-    static let catalogURL = URL(string: "https://raw.githubusercontent.com/morphinephotographer/awake./main/Resources/catalog.json")!
+    static let catalogURL = URL(string: "https://raw.githubusercontent.com/morphinephotographer/awake/main/Resources/catalog.json")!
 
     private(set) var enabled: Bool
     private(set) var rules: [WatchRule] = []
@@ -85,6 +85,9 @@ final class Watcher {
     /// Busy apps outside the list.
     private(set) var suggestions: [WatchSuggestion] = []
 
+    /// A watched app went quiet on its own (not closed, not switched off): rule and how long it worked.
+    @ObservationIgnored var onFinished: ((WatchRule, TimeInterval) -> Void)?
+    @ObservationIgnored private var activeSince: [String: Date] = [:]
     @ObservationIgnored private var lastBusy: [String: Date] = [:]
     @ObservationIgnored private var previous: [String: (cpu: Double, disk: UInt64, at: Date)] = [:]
     @ObservationIgnored private var icons: [String: NSImage] = [:]
@@ -118,7 +121,7 @@ final class Watcher {
     func setEnabled(_ on: Bool) {
         enabled = on
         UserDefaults.standard.set(on, forKey: "watchEnabled")
-        if !on { active = []; lastBusy = [:]; suggestions = [] }
+        if !on { active = []; lastBusy = [:]; activeSince = [:]; suggestions = [] }
     }
 
     func setMode(_ mode: WatchMode, for id: String) {
@@ -129,6 +132,7 @@ final class Watcher {
             rules[i].mode = mode
         }
         lastBusy[id] = nil
+        activeSince[id] = nil
         active.removeAll { $0 == id }
         save()
     }
@@ -381,6 +385,15 @@ final class Watcher {
                 if let last = lastBusy[rule.id], now.timeIntervalSince(last) < grace { next.append(rule.id) }
             }
         }
+        // Apps that were working and went quiet while still open — the job is done.
+        for id in active where !next.contains(id) {
+            if let r = rule(id), r.mode != .open, r.mode != .off, open[id] != nil,
+               let since = activeSince[id], let last = lastBusy[id] {
+                onFinished?(r, max(0, last.timeIntervalSince(since)))
+            }
+        }
+        for id in next where activeSince[id] == nil { activeSince[id] = now }
+        for id in activeSince.keys where !next.contains(id) { activeSince[id] = nil }
         if next != active { active = next }
 
         lookForStrangers(apps: apps, blockers: blockers, now: now)

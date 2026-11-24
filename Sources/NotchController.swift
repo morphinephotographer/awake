@@ -186,6 +186,9 @@ final class NotchController {
             try? await Task.sleep(for: .milliseconds(900))
             withAnimation(Motion.ears) { self.model.launching = false }
             self.startOnboardingIfNeeded()
+            if self.awake.notifyDone && self.awake.watcher.enabled && !self.model.onboarding {
+                Notifier.requestPermission()
+            }
         }
     }
 
@@ -205,6 +208,7 @@ final class NotchController {
     func finishOnboarding(watch: Bool) {
         UserDefaults.standard.set(true, forKey: "onboarded")
         awake.setWatchEnabled(watch)
+        if watch && awake.notifyDone { Notifier.requestPermission() }
         withAnimation(.easeInOut(duration: 0.25)) { model.onboarding = false }
         handleMouse()
     }
@@ -232,10 +236,55 @@ final class NotchController {
             if let t = value("time"), let date = Self.nextOccurrence(of: t) { awake.start(until: date) }
         case "activity":
             awake.startActivity()
+        case "snapshot":
+            snapshot()
+            return
         default:
             return
         }
         peek(ms: 1600)
+    }
+
+    /// Draws the real panel into PNGs for the README: /Users/Shared/awake/shots (awake://snapshot).
+    private func snapshot() {
+        let dir = URL(fileURLWithPath: LidGuard.dir).appendingPathComponent("shots")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let wasActive = awake.isActive
+        if !wasActive { awake.start(preset: awake.savedPreset) }
+        func shot(_ name: String, expanded: Bool) {
+            let m = NotchModel()
+            m.notchSize = model.notchSize
+            m.hasNotch = true
+            m.launching = false
+            m.earsVisible = true
+            m.dotOn = true
+            m.appsMode = awake.isActive && awake.reason == .apps
+            m.loginEnabled = model.loginEnabled
+            m.iconInNotch = true
+            m.isExpanded = expanded
+            let height = Layout.size(m).height + 150
+            let view = NotchView(model: m, awake: awake)
+                .environment(\.snapshot, true)
+                .frame(width: 440, height: height)
+            let renderer = ImageRenderer(content: view)
+            renderer.scale = 2
+            // Flatten to plain 8-bit sRGB: the renderer's extended-range image would be saved as HDR (PQ).
+            guard let cg = renderer.cgImage,
+                  let srgb = CGColorSpace(name: CGColorSpace.sRGB),
+                  let ctx = CGContext(data: nil, width: cg.width, height: cg.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: srgb, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+            guard let flat = ctx.makeImage(),
+                  let png = NSBitmapImageRep(cgImage: flat).representation(using: .png, properties: [:]) else { return }
+            try? png.write(to: dir.appendingPathComponent(name))
+        }
+        for lang in Loc.supported {
+            Loc.current = lang
+            shot("panel-\(lang).png", expanded: true)
+            shot("notch-\(lang).png", expanded: false)
+        }
+        Loc.current = Loc.resolve()
+        if !wasActive { awake.stop() }
     }
 
     /// "18:30" → the next moment the clock shows it.

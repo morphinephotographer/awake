@@ -3,9 +3,15 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/Library/Python/3.9/bin:$PATH"
 cd "$(dirname "$0")/.." || exit 1
 ROOT="$(pwd)"
-REPO="morphinephotographer/awake."
+REPO="morphinephotographer/awake"
+OLD_REPO="morphinephotographer/awake."
 {
   echo "=== $(date) ==="
+  # One-time rename "awake." → "awake": a trailing dot breaks shared links. GitHub redirects the old name.
+  if ! gh repo view "$REPO" >/dev/null 2>&1 && gh repo view "$OLD_REPO" >/dev/null 2>&1; then
+    gh repo rename awake --repo "$OLD_REPO" --yes && echo RENAME_OK
+  fi
+  git remote set-url origin "https://github.com/$REPO.git" && echo REMOTE_OK
   sh build.sh || { echo BUILD_FAILED; exit 1; }
   VER=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' build/awake.app/Contents/Info.plist)
   mkdir -p dist
@@ -24,7 +30,7 @@ REPO="morphinephotographer/awake."
   # Repository: public, with a description and topics
   gh repo edit "$REPO" --visibility public --accept-visibility-change-consequences && echo PUBLIC_OK
   gh repo edit "$REPO" \
-    --description "Keeps your Mac awake — right from the MacBook notch. Timers, render watcher for 70 creative apps and AI agents (Claude Code, Codex…), closed-lid mode." \
+    --description "Keeps your Mac awake — right from the MacBook notch. Timers, a render watcher for 70+ creative apps and AI agents, closed-lid mode." \
     --add-topic macos --add-topic notch --add-topic swiftui --add-topic caffeine --add-topic amphetamine \
     --add-topic keep-awake --add-topic menubar --add-topic macbook && echo META_OK
 

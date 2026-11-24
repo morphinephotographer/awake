@@ -1,10 +1,17 @@
 **awake.** keeps your Mac awake — right from the MacBook notch.
 
 ### Download
-- **awake-1.7.2.dmg** — open and drag awake. to Applications.
-- **awake-1.7.2.zip** — the same app in a zip.
+- **awake-1.8.0.dmg** — open and drag awake. to Applications.
+- **awake-1.8.0.zip** — the same app in a zip.
 
 The app is not notarized yet: on first launch open **System Settings → Privacy & Security → Open Anyway** (or right-click the app → Open).
+
+### New in 1.8
+- **“Render finished” notifications** — when Capture One, Photoshop, an AI agent or a download is done, with how long it worked (⋯ → Apps)
+- **When everything's done** — turn off the display or put the Mac to sleep after the last job (only if nobody has touched the Mac for a few minutes)
+- **While a display is connected** — stay awake as long as an external monitor is plugged in (⋯)
+- **Updates itself** — once a day awake. looks for a new version; it appears in ⋯ and installs in one click
+- The repository is now **github.com/morphinephotographer/awake** (old links redirect) and is MIT-licensed
 
 ### New in 1.7.2
 - No more doubled icons: when the ChatGPT app and Codex CLI (or Claude and Claude Code) work at once, the notch shows one ChatGPT / Claude icon

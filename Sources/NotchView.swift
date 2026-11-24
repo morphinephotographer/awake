@@ -5,6 +5,15 @@ extension Color {
     static let awakeGreen = Color(red: 0.24, green: 0.88, blue: 0.48)
 }
 
+/// True while the panel is rendered into a picture for the README (native menus can't be drawn there).
+private struct SnapshotKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues {
+    var snapshot: Bool {
+        get { self[SnapshotKey.self] }
+        set { self[SnapshotKey.self] = newValue }
+    }
+}
+
 enum Motion {
     /// Panel growing out of the notch.
     static let grow = Animation.spring(response: 0.55, dampingFraction: 0.78)
@@ -146,6 +155,10 @@ private struct CollapsedContent: View {
                 if awake.isActive && awake.reason == .apps && !awake.watcher.active.isEmpty {
                     AppStack(awake: awake, size: 16)
                         .transition(.scale.combined(with: .opacity))
+                } else if awake.isActive && awake.reason == .monitor {
+                    Image(systemName: "display")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white)
                 } else {
                     Text(awake.shortText)
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -407,6 +420,11 @@ private struct SettingsMenu: View {
             set: { on in if on { awake.startActivity() } else { awake.stop() } }
         )) { Label(tr("Пока идёт работа"), systemImage: "cpu") }
 
+        Toggle(isOn: Binding(
+            get: { awake.monitorMode },
+            set: { awake.setMonitorMode($0) }
+        )) { Label(tr("Пока подключён монитор"), systemImage: "display") }
+
         Menu {
             ForEach(NotchController.untilChoices(), id: \.self) { date in
                 Button(tr("до %@", Awake.hm.string(from: date))) { awake.start(until: date) }
@@ -428,6 +446,19 @@ private struct SettingsMenu: View {
                     withAnimation(Motion.ears) { model.iconInNotch = on }
                 }
             ))
+            Toggle(tr("Уведомлять, когда готово"), isOn: Binding(
+                get: { awake.notifyDone },
+                set: { awake.setNotifyDone($0) }
+            ))
+            Picker(selection: Binding(
+                get: { awake.afterDone },
+                set: { awake.setAfterDone($0) }
+            )) {
+                Text(tr("Ничего не делать")).tag(Awake.AfterDone.nothing)
+                Text(tr("Выключить экран")).tag(Awake.AfterDone.display)
+                Text(tr("Усыпить Mac")).tag(Awake.AfterDone.sleep)
+            } label: { Text(tr("Когда всё готово")) }
+            .pickerStyle(.menu)
             Divider()
             if awake.watcher.visibleRules.isEmpty {
                 Text(tr("Нет знакомых программ"))
@@ -473,6 +504,9 @@ private struct SettingsMenu: View {
         Divider()
 
         Menu {
+            Button(tr("Проверить обновления")) {
+                Task { await awake.updater.check(manual: true) }
+            }
             Button(tr("Скопировать ссылку для «Быстрых команд»")) {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString("awake://start?minutes=60", forType: .string)
@@ -488,6 +522,12 @@ private struct SettingsMenu: View {
         } label: { Label(tr("Ещё"), systemImage: "ellipsis.circle") }
 
         Divider()
+        if let version = awake.updater.available {
+            Button { awake.updater.install() } label: {
+                Label(awake.updater.busy ? tr("Обновляю…") : tr("Обновить до %@", version), systemImage: "arrow.down.circle")
+            }
+            .disabled(awake.updater.busy)
+        }
         Text(tr("awake. %@ · создано Morphine", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""))
     }
 }
@@ -497,24 +537,37 @@ private struct OptionsButton: View {
     let model: NotchModel
     let awake: Awake
     @State private var hover = false
+    @Environment(\.snapshot) private var snapshot
 
     var body: some View {
-        Menu {
-            SettingsMenu(model: model, awake: awake)
-        } label: {
-            Image(systemName: "ellipsis")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.white.opacity(hover ? 0.75 : 0.45))
-                .frame(width: 26, height: 26)
-                .background(Circle().fill(Color.white.opacity(hover ? 0.12 : 0.07)))
-                .contentShape(Circle())
+        if snapshot {
+            dots
+        } else {
+            Menu {
+                SettingsMenu(model: model, awake: awake)
+            } label: { dots }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .onHover { hover = $0 }
+            .help(awake.updater.available != nil ? tr("Есть обновление") : tr("Ещё настройки"))
         }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .onHover { hover = $0 }
-        .help(tr("Ещё настройки"))
+    }
+
+    /// A small green dot when a new version is waiting in the menu.
+    private var dots: some View {
+        Image(systemName: "ellipsis")
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(.white.opacity(hover ? 0.75 : 0.45))
+            .frame(width: 26, height: 26)
+            .background(Circle().fill(Color.white.opacity(hover ? 0.12 : 0.07)))
+            .overlay(alignment: .topTrailing) {
+                if awake.updater.available != nil {
+                    Circle().fill(Color.awakeGreen).frame(width: 6, height: 6).offset(x: -1, y: 1)
+                }
+            }
+            .contentShape(Circle())
     }
 }
 

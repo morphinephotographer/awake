@@ -1,7 +1,10 @@
-awake. 1.7.2 — no duplicate app icons in the notch
+awake. 1.8.0 — notifications, sleep after the job, display mode, self-update
 
-One icon per app: the ChatGPT app and Codex CLI (Claude and Claude Code) share an icon,
-so the notch and the open panel show it once. The busy one speaks for the group.
+- Notification when a watched app finishes (render / download / agent task), with its duration
+- After the last job: turn off the display or sleep, only if the Mac is idle
+- Stay awake while an external display is connected
+- Daily update check on GitHub, one-click install from the menu
+- Repo renamed to "awake", MIT license, screenshots rendered from the real panel
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN

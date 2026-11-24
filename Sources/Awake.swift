@@ -5,13 +5,17 @@ import IOKit.ps
 import IOKit.pwr_mgt
 import Observation
 import ServiceManagement
+import UserNotifications
 
 /// Keeps the Mac awake with IOKit power assertions (the same mechanism Amphetamine uses).
 @MainActor
 @Observable
 final class Awake {
     /// Why the current session runs.
-    enum Reason { case manual, apps, activity }
+    enum Reason { case manual, apps, activity, monitor }
+
+    /// What to do once the watched apps have finished their work.
+    enum AfterDone: String, CaseIterable { case nothing, display, sleep }
 
     /// 0 = without limit.
     static let durations: [TimeInterval] = [15 * 60, 60 * 60, 2 * 3600, 4 * 3600, 0]
@@ -44,6 +48,14 @@ final class Awake {
     let watcher: Watcher
     /// Stop when on battery at or below this percent (0 = never).
     private(set) var batteryLimit: Int
+    /// Notify when a watched app has finished rendering / downloading / its task.
+    private(set) var notifyDone: Bool
+    /// After the last watched app has finished: nothing, display off or sleep (only if nobody is at the Mac).
+    private(set) var afterDone: AfterDone
+    /// Stay awake while an external display is connected.
+    private(set) var monitorMode: Bool
+    /// Checks GitHub for a newer version.
+    let updater: Updater
 
     /// Called once per timed session when one minute is left.
     @ObservationIgnored var onEndingSoon: (() -> Void)?
@@ -59,6 +71,9 @@ final class Awake {
     @ObservationIgnored private var lastCPU: (busy: UInt64, total: UInt64) = (0, 0)
     @ObservationIgnored private var lastNet: UInt64 = 0
     @ObservationIgnored private var watchTimer: Timer?
+    @ObservationIgnored private var monitorSuppressed = false
+    @ObservationIgnored private var finishedJobs: [(rule: WatchRule, worked: TimeInterval)] = []
+    @ObservationIgnored private var afterTask: Task<Void, Never>?
 
     init() {
         let d = UserDefaults.standard
@@ -67,8 +82,15 @@ final class Awake {
         keepDisplay = d.object(forKey: "keepDisplay") as? Bool ?? true
         lidMode = (d.object(forKey: "lidMode") as? Bool ?? false) && LidGuard.isInstalled
         batteryLimit = d.object(forKey: "batteryLimit") as? Int ?? 10
+        notifyDone = d.object(forKey: "notifyDone") as? Bool ?? true
+        afterDone = d.string(forKey: "afterDone").flatMap(AfterDone.init(rawValue:)) ?? .nothing
+        monitorMode = d.object(forKey: "monitorMode") as? Bool ?? false
         watcher = Watcher()
+        updater = Updater()
         LidGuard.clear()
+        watcher.onFinished = { [weak self] rule, worked in
+            self?.finishedJobs.append((rule: rule, worked: worked))
+        }
 
         let t = Timer(timeInterval: 3, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.watchTick() }
@@ -111,6 +133,7 @@ final class Awake {
     /// until the set of running watched apps changes.
     func stop() {
         if !watcher.active.isEmpty { appSuppressed = true }
+        if monitorMode && Self.externalDisplay() { monitorSuppressed = true }
         end()
     }
 
@@ -167,6 +190,25 @@ final class Awake {
         watchTick()
     }
 
+    func setNotifyDone(_ on: Bool) {
+        notifyDone = on
+        UserDefaults.standard.set(on, forKey: "notifyDone")
+        if on { Notifier.requestPermission() }
+    }
+
+    func setAfterDone(_ action: AfterDone) {
+        afterDone = action
+        UserDefaults.standard.set(action.rawValue, forKey: "afterDone")
+        if action == .nothing { afterTask?.cancel() }
+    }
+
+    func setMonitorMode(_ on: Bool) {
+        monitorMode = on
+        UserDefaults.standard.set(on, forKey: "monitorMode")
+        monitorSuppressed = false
+        checkMonitor()
+    }
+
     func setBatteryLimit(_ pct: Int) {
         batteryLimit = pct
         UserDefaults.standard.set(pct, forKey: "batteryLimit")
@@ -190,6 +232,7 @@ final class Awake {
         switch reason {
         case .apps: return watchVerb
         case .activity: return tr("раб")
+        case .monitor: return ""
         case .manual: break
         }
         guard let r = remaining else { return "∞" }
@@ -203,6 +246,7 @@ final class Awake {
         switch reason {
         case .apps: return watchVerb
         case .activity: return tr("работа")
+        case .monitor: return tr("монитор")
         case .manual: break
         }
         guard let r = remaining else { return tr("не спит") }
@@ -241,6 +285,8 @@ final class Awake {
     // MARK: Session core
 
     private func begin(length d: TimeInterval, reason: Reason, preset: TimeInterval?) {
+        afterTask?.cancel()
+        afterTask = nil
         releaseAll()
         guard let id = makeAssertion(display: false, timeout: d) else {
             NSLog("awake.: could not create system assertion")
@@ -276,13 +322,50 @@ final class Awake {
     /// Every 3 s: ask the watcher which apps work, start or end the "apps" session.
     /// A manual stop is respected until all watched apps calm down.
     private func watchTick() {
+        finishedJobs = []
         watcher.sample(now: Date())
+        var jobsDone = false
         if !watcher.active.isEmpty {
             if !isActive && !appSuppressed && !batteryLow { begin(length: 0, reason: .apps, preset: nil) }
         } else {
             appSuppressed = false
-            if isActive && reason == .apps { end() }
+            if isActive && reason == .apps {
+                end()
+                jobsDone = !finishedJobs.isEmpty
+            }
         }
+        checkMonitor()
+        // The display mode keeps the Mac awake anyway — then nothing to switch off.
+        let after: AfterDone = jobsDone && !isActive ? afterDone : .nothing
+        if notifyDone {
+            for job in finishedJobs where job.worked >= 120 {
+                Notifier.jobDone(job.rule, worked: job.worked, after: after)
+            }
+        }
+        if after != .nothing { scheduleAfterDone(after) }
+        finishedJobs = []
+    }
+
+    /// One minute later, if nobody has touched the Mac for a few minutes: display off or sleep.
+    private func scheduleAfterDone(_ action: AfterDone) {
+        afterTask?.cancel()
+        afterTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(60))
+            guard let self, !Task.isCancelled, !self.isActive, Self.idleSeconds() >= 180 else { return }
+            self.afterTask = nil
+            Self.pmset(action == .sleep ? "sleepnow" : "displaysleepnow")
+        }
+    }
+
+    /// Display mode: a session while an external display is connected. A manual stop is respected
+    /// until the display is unplugged.
+    private func checkMonitor() {
+        guard monitorMode, Self.externalDisplay() else {
+            monitorSuppressed = false
+            if isActive && reason == .monitor { end() }
+            return
+        }
+        if !isActive && !monitorSuppressed && !batteryLow { begin(length: 0, reason: .monitor, preset: nil) }
     }
 
     /// On battery at or below the chosen limit — auto modes must not start.
@@ -387,6 +470,28 @@ final class Awake {
     }
 
     // MARK: System readings
+
+    /// Any display that is not the MacBook's own screen.
+    static func externalDisplay() -> Bool {
+        NSScreen.screens.contains { screen in
+            guard let n = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else { return false }
+            return CGDisplayIsBuiltin(CGDirectDisplayID(n.uint32Value)) == 0
+        }
+    }
+
+    /// Seconds since the last keyboard / mouse / trackpad input.
+    static func idleSeconds() -> TimeInterval {
+        guard let any = CGEventType(rawValue: ~0) else { return 0 }
+        return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: any)
+    }
+
+    /// `pmset sleepnow` / `displaysleepnow` work without admin rights.
+    static func pmset(_ command: String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+        p.arguments = [command]
+        do { try p.run() } catch { NSLog("awake.: pmset \(command) failed \(error)") }
+    }
 
     static func battery() -> (onBattery: Bool, percent: Int)? {
         guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),

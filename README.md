@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/morphinephotographer/awake./releases/latest"><b>Download for macOS</b></a> ·
+  <a href="https://github.com/morphinephotographer/awake/releases/latest"><b>Download for macOS</b></a> ·
   <a href="README.uk.md">Українська</a> ·
   <a href="README.ru.md">Русский</a>
 </p>
@@ -11,25 +11,33 @@
 <p align="center">
   <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Apple%20Silicon-native-34C759" alt="Apple Silicon">
-  <img src="https://img.shields.io/github/v/release/morphinephotographer/awake.?color=34C759&label=version" alt="version">
+  <img src="https://img.shields.io/github/v/release/morphinephotographer/awake?color=34C759&label=version" alt="version">
 </p>
 
 **awake.** is a tiny macOS app that lives in the MacBook notch and stops your Mac from falling asleep — for a set time, until a set hour, or exactly as long as your apps are rendering, exporting or downloading. No Dock icon, no menu-bar clutter: hover the notch and it opens.
+
+<p align="center">
+  <img src="docs/screen-en.png" alt="The notch while an AI agent works, and the open panel" width="880">
+</p>
 
 ## Features
 
 - **Lives in the notch.** Hover the notch → a compact black panel grows out of it. Move away → it slides back.
 - **One tap.** Big ⏻ button and presets **15m · 1h · 2h · 4h · ∞**, or *until 18:00*.
 - **Render watcher.** awake. sees when Photoshop, Capture One, DaVinci Resolve, Premiere, Blender and ~70 other apps are actually working and keeps the Mac awake only for that time — then lets it sleep 2 minutes after the job is done. The app's icon appears next to the notch while it renders.
+- **“Render finished” notifications.** When Capture One, Photoshop or an AI agent is done, macOS shows a notification with how long it worked.
+- **After the job — sleep.** Leave an export overnight: once every watched app is done, awake. turns off the display or puts the Mac to sleep (only if nobody has touched it for a few minutes).
 - **AI agents.** Claude Code, Codex CLI, Gemini CLI, Aider and other agents in Terminal, plus the Claude, ChatGPT and Cursor apps: the Mac stays awake while the agent is on a task — even when it thinks on the server and the Mac is nearly idle (3 minutes of grace).
 - **Knows your apps.** On first launch it finds the supported apps installed on your Mac and asks whether to follow them. Unknown apps that work hard get a “?” — one click to add them.
 - **Closed-lid mode.** Keep working with the lid closed (optional helper, installed once with your admin password; turns itself off when the session ends or the battery drops to 10 %).
 - **Keep the display on** or let it dim while the Mac stays awake.
+- **External display mode.** The Mac stays awake while a monitor is connected — handy when the MacBook works closed at a big screen.
 - **Battery guard** — stop at 10 / 20 / 30 %.
 - **Shortcuts.** ⌥⌘A toggles from anywhere, scroll over the notch adds or removes 15 minutes, ⌘Q quits while the panel is open.
 - **Automation.** `awake://start?minutes=90`, `awake://until?time=18:30`, `awake://activity`, `awake://toggle`, `awake://stop` — use them in the Shortcuts app.
 - **Tiny.** Native SwiftUI, no background CPU when idle, ~20–40 MB of memory.
 - **Speaks your language.** English, Ukrainian and Russian — picks the macOS language automatically, or choose it in ⋯ → **Language**.
+- **Updates itself.** Once a day awake. checks this repository; a new version appears in ⋯ and installs in one click.
 
 ## Supported apps
 
@@ -50,7 +58,7 @@ Every app can be switched between *render & export*, *downloads*, *while open* a
 
 ## Install
 
-1. Download **awake-x.y.z.dmg** from [Releases](https://github.com/morphinephotographer/awake./releases/latest).
+1. Download **awake-x.y.z.dmg** from [Releases](https://github.com/morphinephotographer/awake/releases/latest).
 2. Open it and drag **awake.** to **Applications**.
 3. The app is not notarized yet, so on first launch macOS will say it can't check it. Open **System Settings → Privacy & Security** and click **Open Anyway** (or right-click the app → **Open**).
 
@@ -58,7 +66,7 @@ Requires macOS 14 Sonoma or newer. Made for MacBooks with a notch; on other Macs
 
 ## Privacy
 
-awake. collects nothing. The only network request is a weekly download of the app catalog from this repository.
+awake. collects nothing. It talks to the network only to download the app catalog from this repository once a week and to look for a new release once a day.
 
 ## Remove the closed-lid helper
 
@@ -79,6 +87,10 @@ sh build.sh          # → build/awake.app
 ```
 
 `Собрать и установить.command` builds, installs to /Applications and packs a zip; `tools/make_release.command` also builds the DMG and publishes a GitHub release.
+
+## License
+
+[MIT](LICENSE) — free to use, change and share; keep the copyright notice.
 
 ---
 
