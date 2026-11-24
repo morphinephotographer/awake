@@ -157,7 +157,12 @@ private struct CollapsedContent: View {
 
     var body: some View {
         HStack {
-            CountdownClock(awake: awake, on: model.dotOn)
+            if awake.isActive && awake.reason == .apps && !awake.watcher.active.isEmpty {
+                AppStack(awake: awake, size: 15)
+                    .transition(.scale.combined(with: .opacity))
+            } else {
+                CountdownClock(awake: awake, on: model.dotOn)
+            }
             Spacer(minLength: 0)
             Text(awake.shortText)
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -201,10 +206,15 @@ private struct ExpandedContent: View {
                     .buttonStyle(PressStyle())
                     .transition(.scale.combined(with: .opacity))
                 }
-                Text(awake.longText)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.white.opacity(awake.isActive ? 1 : 0.4))
+                HStack(spacing: 5) {
+                    if awake.isActive && awake.reason == .apps && !awake.watcher.active.isEmpty {
+                        AppStack(awake: awake, size: 15)
+                    }
+                    Text(awake.longText)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(awake.isActive ? 1 : 0.4))
+                }
             }
             .padding(.horizontal, 16)
             .frame(height: model.notchSize.height)
@@ -228,6 +238,10 @@ private struct ExpandedContent: View {
                             LoginItem.toggle()
                             model.loginEnabled = LoginItem.isEnabled
                         }
+                        IconButton(symbol: "film", on: awake.watcher.enabled,
+                                   help: awake.watcher.enabled ? "Следит за рендером в твоих программах" : "Не следить за программами") {
+                            awake.setWatchEnabled(!awake.watcher.enabled)
+                        }
                         Spacer(minLength: 0)
                         IconButton(symbol: "xmark", on: false, danger: true, help: "Выйти из awake.") {
                             awake.stop()
@@ -238,7 +252,11 @@ private struct ExpandedContent: View {
             }
             .padding(.horizontal, 14)
             .padding(.top, 6)
-            .padding(.bottom, 12)
+
+            WatchRow(awake: awake)
+                .padding(.horizontal, 14)
+                .padding(.top, 8)
+                .padding(.bottom, 10)
         }
         .contentShape(Rectangle())
         .contextMenu { SettingsMenu(model: model, awake: awake) }
@@ -252,16 +270,24 @@ private struct SettingsMenu: View {
     let awake: Awake
 
     var body: some View {
-        Menu("Автовключение, пока открыто") {
-            if model.runningApps.isEmpty {
-                Text("Нет открытых приложений")
+        Menu("Следить за программами") {
+            Toggle("Следить", isOn: Binding(
+                get: { awake.watcher.enabled },
+                set: { awake.setWatchEnabled($0) }
+            ))
+            Divider()
+            ForEach(awake.watcher.rules) { rule in
+                Menu("\(rule.title) — \(rule.mode.title.lowercased())") {
+                    ForEach(WatchMode.allCases, id: \.self) { mode in
+                        Toggle(mode.title, isOn: Binding(
+                            get: { rule.mode == mode },
+                            set: { _ in awake.setWatchMode(mode, for: rule.id) }
+                        ))
+                    }
+                }
             }
-            ForEach(model.runningApps) { app in
-                Toggle(app.name, isOn: Binding(
-                    get: { awake.watchedApps.contains(app.id) },
-                    set: { _ in awake.toggleWatched(app.id) }
-                ))
-            }
+            Divider()
+            Button("Добавить программу…") { awake.watcher.addCustomApp() }
         }
         Toggle("Пока идёт работа (экспорт, рендер, загрузка)", isOn: Binding(
             get: { awake.isActive && awake.reason == .activity },
@@ -401,5 +427,80 @@ private struct IconButton: View {
         if danger { return hover ? Color(red: 1, green: 0.3, blue: 0.28).opacity(0.18) : .white.opacity(0.07) }
         if on { return Color.awakeGreen.opacity(hover ? 0.24 : 0.16) }
         return .white.opacity(hover ? 0.12 : 0.07)
+    }
+}
+
+// MARK: - Watched apps
+
+/// Real app icon, or a grey tile with initials when the app is not installed.
+struct AppIconView: View {
+    let image: NSImage?
+    let title: String
+    let size: CGFloat
+
+    var body: some View {
+        if let image {
+            Image(nsImage: image)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: size, height: size)
+        } else {
+            RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+                .fill(Color.white.opacity(0.12))
+                .overlay(
+                    Text(String(title.prefix(2)))
+                        .font(.system(size: size * 0.42, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.7))
+                )
+                .frame(width: size, height: size)
+        }
+    }
+}
+
+/// Icons of the apps keeping the Mac awake (up to two, stacked).
+private struct AppStack: View {
+    let awake: Awake
+    let size: CGFloat
+
+    var body: some View {
+        let ids = Array(awake.watcher.active.prefix(2))
+        HStack(spacing: -size * 0.3) {
+            ForEach(ids, id: \.self) { id in
+                if let rule = awake.watcher.rule(id) {
+                    AppIconView(image: awake.watcher.icon(for: rule), title: rule.title, size: size)
+                }
+            }
+        }
+    }
+}
+
+/// All watched apps: dim = closed, bright = open, green dot = keeping the Mac awake.
+private struct WatchRow: View {
+    let awake: Awake
+
+    var body: some View {
+        let w = awake.watcher
+        HStack(spacing: 7) {
+            ForEach(w.rules.filter { $0.mode != .off }) { rule in
+                let open = w.running.contains(rule.id)
+                let active = w.active.contains(rule.id)
+                AppIconView(image: w.icon(for: rule), title: rule.title, size: 20)
+                    .opacity(w.enabled ? (open ? 1 : 0.3) : 0.2)
+                    .overlay(alignment: .bottomTrailing) {
+                        if active {
+                            Circle()
+                                .fill(Color.awakeGreen)
+                                .frame(width: 7, height: 7)
+                                .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
+                                .offset(x: 2, y: 2)
+                                .transition(.scale)
+                        }
+                    }
+                    .help("\(rule.title) — \(active ? rule.mode.verb : (open ? "открыта" : "закрыта")) · \(rule.mode.title.lowercased())")
+                    .animation(.easeOut(duration: 0.2), value: active)
+                    .animation(.easeOut(duration: 0.2), value: open)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 22)
     }
 }

@@ -40,8 +40,8 @@ final class Awake {
     private(set) var startDate: Date?
     /// Keep working with the lid closed (via the root guard + pmset disablesleep).
     private(set) var lidMode: Bool
-    /// Bundle IDs that switch awake. on while they run.
-    private(set) var watchedApps: Set<String>
+    /// Follows the user's apps (render / download / open).
+    let watcher: Watcher
     /// Stop when on battery at or below this percent (0 = never).
     private(set) var batteryLimit: Int
 
@@ -58,7 +58,7 @@ final class Awake {
     @ObservationIgnored private var lastBusy = Date()
     @ObservationIgnored private var lastCPU: (busy: UInt64, total: UInt64) = (0, 0)
     @ObservationIgnored private var lastNet: UInt64 = 0
-    @ObservationIgnored private var observers: [NSObjectProtocol] = []
+    @ObservationIgnored private var watchTimer: Timer?
 
     init() {
         let d = UserDefaults.standard
@@ -66,17 +66,17 @@ final class Awake {
         savedPreset = Self.durations.contains(saved) ? saved : 3600
         keepDisplay = d.object(forKey: "keepDisplay") as? Bool ?? true
         lidMode = (d.object(forKey: "lidMode") as? Bool ?? false) && LidGuard.isInstalled
-        watchedApps = Set(d.stringArray(forKey: "watchedApps") ?? [])
         batteryLimit = d.object(forKey: "batteryLimit") as? Int ?? 10
+        watcher = Watcher()
         LidGuard.clear()
 
-        let wc = NSWorkspace.shared.notificationCenter
-        for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
-            observers.append(wc.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.refreshAppTrigger() }
-            })
+        let t = Timer(timeInterval: 3, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.watchTick() }
         }
-        refreshAppTrigger()
+        t.tolerance = 1
+        RunLoop.main.add(t, forMode: .common)
+        watchTimer = t
+        watchTick()
     }
 
     // MARK: Actions
@@ -110,7 +110,7 @@ final class Awake {
     /// Stops the session. A watched app that is still open will not restart it
     /// until the set of running watched apps changes.
     func stop() {
-        if watchedAppRunning { appSuppressed = true }
+        if !watcher.active.isEmpty { appSuppressed = true }
         end()
     }
 
@@ -156,11 +156,15 @@ final class Awake {
         lastLidWrite = nil
     }
 
-    func toggleWatched(_ bundleID: String) {
-        if watchedApps.contains(bundleID) { watchedApps.remove(bundleID) } else { watchedApps.insert(bundleID) }
-        UserDefaults.standard.set(Array(watchedApps), forKey: "watchedApps")
+    func setWatchEnabled(_ on: Bool) {
+        watcher.setEnabled(on)
         appSuppressed = false
-        refreshAppTrigger()
+        watchTick()
+    }
+
+    func setWatchMode(_ mode: WatchMode, for id: String) {
+        watcher.setMode(mode, for: id)
+        watchTick()
     }
 
     func setBatteryLimit(_ pct: Int) {
@@ -184,7 +188,7 @@ final class Awake {
     var shortText: String {
         guard isActive else { return "" }
         switch reason {
-        case .apps: return "авто"
+        case .apps: return watchVerb
         case .activity: return "раб"
         case .manual: break
         }
@@ -197,13 +201,18 @@ final class Awake {
     var longText: String {
         guard isActive else { return "выкл" }
         switch reason {
-        case .apps: return "авто"
+        case .apps: return watchVerb
         case .activity: return "работа"
         case .manual: break
         }
         guard let r = remaining else { return "не спит" }
         let s = Int(r.rounded(.up))
         return String(format: "%d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
+    }
+
+    /// "рендер" / "качает" / "открыт" for the first app that keeps the Mac awake.
+    var watchVerb: String {
+        watcher.active.first.flatMap { watcher.rule($0)?.mode.verb } ?? "авто"
     }
 
     var untilText: String {
@@ -264,15 +273,11 @@ final class Awake {
         syncLid(force: true)
     }
 
-    private var watchedAppRunning: Bool {
-        guard !watchedApps.isEmpty else { return false }
-        return NSWorkspace.shared.runningApplications.contains { app in
-            app.bundleIdentifier.map(watchedApps.contains) ?? false
-        }
-    }
-
-    private func refreshAppTrigger() {
-        if watchedAppRunning {
+    /// Every 3 s: ask the watcher which apps work, start or end the "apps" session.
+    /// A manual stop is respected until all watched apps calm down.
+    private func watchTick() {
+        watcher.sample(now: Date())
+        if !watcher.active.isEmpty {
             if !isActive && !appSuppressed { begin(length: 0, reason: .apps, preset: nil) }
         } else {
             appSuppressed = false
@@ -301,7 +306,7 @@ final class Awake {
                 // Natural end: an open watched app may take over again.
                 end()
                 appSuppressed = false
-                refreshAppTrigger()
+                watchTick()
                 return
             }
             if r <= 60 && !warned {

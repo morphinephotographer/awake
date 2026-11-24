@@ -13,13 +13,6 @@ final class NotchModel {
     /// Side "ears" with the eye and the timer (lag behind Awake.isActive for the closing-eye animation).
     var earsVisible = false
     var dotOn = false
-    /// Apps offered in "Автовключение" (running regular apps + watched ones).
-    var runningApps: [AppItem] = []
-}
-
-struct AppItem: Identifiable, Hashable {
-    let id: String
-    let name: String
 }
 
 /// Sizes shared by the SwiftUI view and the hover hit-testing.
@@ -29,7 +22,7 @@ enum Layout {
 
     static func size(_ model: NotchModel) -> CGSize {
         let n = model.notchSize
-        if model.isExpanded { return CGSize(width: max(n.width + 160, 352), height: n.height + 80) }
+        if model.isExpanded { return CGSize(width: max(n.width + 160, 352), height: n.height + 106) }
         if model.earsVisible { return CGSize(width: n.width + ear * 2, height: n.height) }
         // Exactly the hardware notch (flares included), so it is invisible when idle.
         return CGSize(width: max(0, n.width - corners(false).top * 2), height: n.height)
@@ -195,21 +188,6 @@ final class NotchController {
         }
     }
 
-    private func refreshApps() {
-        var items: [String: String] = [:]
-        let me = Bundle.main.bundleIdentifier
-        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
-            if let id = app.bundleIdentifier, id != me { items[id] = app.localizedName ?? id }
-        }
-        for id in awake.watchedApps where items[id] == nil {
-            let name = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id)
-                .map { $0.deletingPathExtension().lastPathComponent } ?? id
-            items[id] = name
-        }
-        model.runningApps = items.map { AppItem(id: $0.key, name: $0.value) }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-
     // MARK: Geometry
 
     private func targetScreen() -> NSScreen? {
@@ -234,7 +212,7 @@ final class NotchController {
         model.hasNotch = hasNotch
         midX = screen.frame.midX
         top = screen.frame.maxY
-        let size = CGSize(width: 440, height: h + 130)
+        let size = CGSize(width: 440, height: h + 156)
         panel?.setFrame(NSRect(x: midX - size.width / 2, y: top - size.height, width: size.width, height: size.height), display: true)
     }
 
@@ -318,7 +296,6 @@ final class NotchController {
     private func expand() {
         guard !model.isExpanded else { return }
         model.loginEnabled = LoginItem.isEnabled
-        refreshApps()
         model.isExpanded = true
         panel?.ignoresMouseEvents = false
         // Safety net: re-check the pointer even if no mouse events arrive.

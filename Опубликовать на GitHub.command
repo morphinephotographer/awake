@@ -10,10 +10,10 @@ REPO="morphinephotographer/awake."
   git add -A
   git commit -q -m "awake. $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
 
-Auto-on while chosen apps are open, «while working» mode (CPU/network),
-until-time, ±15 min by scroll, +15 before the end, battery limit for all
-modes, ⌥⌘A hotkey, click ears to stop, awake:// links for Shortcuts,
-uninstall the lid helper — all in the right-click menu, design unchanged.
+Render watcher for the user's apps (Photoshop, Lightroom, Bridge, Capture One,
+Retouch4me Dodge & Burn, Reblum, CapCut, DaVinci Resolve: while rendering;
+toreo.: while downloading; Teleo.: while open). Notch ears and top row show
+the app icon, new «render» button, row of app icons, per-app modes in menu.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN" && echo COMMIT_OK || echo NOTHING_TO_COMMIT
