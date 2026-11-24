@@ -243,6 +243,8 @@ private struct ExpandedContent: View {
                             awake.setWatchEnabled(!awake.watcher.enabled)
                         }
                         Spacer(minLength: 0)
+                        RunningApps(awake: awake)
+                        Spacer(minLength: 0)
                         IconButton(symbol: "xmark", on: false, danger: true, help: "Выйти из awake.") {
                             awake.stop()
                             NSApp.terminate(nil)
@@ -252,11 +254,7 @@ private struct ExpandedContent: View {
             }
             .padding(.horizontal, 14)
             .padding(.top, 6)
-
-            WatchRow(awake: awake)
-                .padding(.horizontal, 14)
-                .padding(.top, 8)
-                .padding(.bottom, 10)
+            .padding(.bottom, 12)
         }
         .contentShape(Rectangle())
         .contextMenu { SettingsMenu(model: model, awake: awake) }
@@ -474,18 +472,21 @@ private struct AppStack: View {
     }
 }
 
-/// All watched apps: dim = closed, bright = open, green dot = keeping the Mac awake.
-private struct WatchRow: View {
+/// Only the watched apps that are open right now, in the free space of the bottom row.
+/// Green dot = this app is keeping the Mac awake (rendering / downloading / open).
+private struct RunningApps: View {
     let awake: Awake
+    static let maxIcons = 3
 
     var body: some View {
         let w = awake.watcher
-        HStack(spacing: 7) {
-            ForEach(w.rules.filter { $0.mode != .off }) { rule in
-                let open = w.running.contains(rule.id)
+        let open = w.enabled ? w.rules.filter { $0.mode != .off && w.running.contains($0.id) } : []
+        let shown = open.count > Self.maxIcons ? Array(open.prefix(Self.maxIcons - 1)) : open
+        HStack(spacing: 4) {
+            ForEach(shown) { rule in
                 let active = w.active.contains(rule.id)
-                AppIconView(image: w.icon(for: rule), title: rule.title, size: 20)
-                    .opacity(w.enabled ? (open ? 1 : 0.3) : 0.2)
+                AppIconView(image: w.icon(for: rule), title: rule.title, size: 18)
+                    .opacity(active ? 1 : 0.55)
                     .overlay(alignment: .bottomTrailing) {
                         if active {
                             Circle()
@@ -496,11 +497,19 @@ private struct WatchRow: View {
                                 .transition(.scale)
                         }
                     }
-                    .help("\(rule.title) — \(active ? rule.mode.verb : (open ? "открыта" : "закрыта")) · \(rule.mode.title.lowercased())")
-                    .animation(.easeOut(duration: 0.2), value: active)
-                    .animation(.easeOut(duration: 0.2), value: open)
+                    .help("\(rule.title) — \(active ? rule.mode.verb : "открыта, ждёт работы") · \(rule.mode.title.lowercased())")
+                    .transition(.scale.combined(with: .opacity))
+            }
+            if open.count > shown.count {
+                Text("+\(open.count - shown.count)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .frame(width: 18, height: 18)
+                    .background(Circle().fill(Color.white.opacity(0.1)))
+                    .help(open.dropFirst(shown.count).map(\.title).joined(separator: ", "))
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 22)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: open.map(\.id))
+        .animation(.easeOut(duration: 0.2), value: w.active)
     }
 }

@@ -22,7 +22,7 @@ enum Layout {
 
     static func size(_ model: NotchModel) -> CGSize {
         let n = model.notchSize
-        if model.isExpanded { return CGSize(width: max(n.width + 160, 352), height: n.height + 106) }
+        if model.isExpanded { return CGSize(width: max(n.width + 160, 352), height: n.height + 80) }
         if model.earsVisible { return CGSize(width: n.width + ear * 2, height: n.height) }
         // Exactly the hardware notch (flares included), so it is invisible when idle.
         return CGSize(width: max(0, n.width - corners(false).top * 2), height: n.height)
@@ -212,7 +212,7 @@ final class NotchController {
         model.hasNotch = hasNotch
         midX = screen.frame.midX
         top = screen.frame.maxY
-        let size = CGSize(width: 440, height: h + 156)
+        let size = CGSize(width: 440, height: h + 130)
         panel?.setFrame(NSRect(x: midX - size.width / 2, y: top - size.height, width: size.width, height: size.height), display: true)
     }
 

@@ -10,10 +10,9 @@ REPO="morphinephotographer/awake."
   git add -A
   git commit -q -m "awake. $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
 
-Render watcher for the user's apps (Photoshop, Lightroom, Bridge, Capture One,
-Retouch4me Dodge & Burn, Reblum, CapCut, DaVinci Resolve: while rendering;
-toreo.: while downloading; Teleo.: while open). Notch ears and top row show
-the app icon, new «render» button, row of app icons, per-app modes in menu.
+Open watched apps now sit in the free space of the bottom row (max 3, +N),
+separate icon row removed — panel back to its compact height. Auto-start by
+apps is skipped when the battery is at or below the chosen limit.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN" && echo COMMIT_OK || echo NOTHING_TO_COMMIT

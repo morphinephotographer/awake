@@ -278,11 +278,17 @@ final class Awake {
     private func watchTick() {
         watcher.sample(now: Date())
         if !watcher.active.isEmpty {
-            if !isActive && !appSuppressed { begin(length: 0, reason: .apps, preset: nil) }
+            if !isActive && !appSuppressed && !batteryLow { begin(length: 0, reason: .apps, preset: nil) }
         } else {
             appSuppressed = false
             if isActive && reason == .apps { end() }
         }
+    }
+
+    /// On battery at or below the chosen limit — auto modes must not start.
+    private var batteryLow: Bool {
+        guard batteryLimit > 0, let b = Self.battery() else { return false }
+        return b.onBattery && b.percent <= batteryLimit
     }
 
     // MARK: Ticker
