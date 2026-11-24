@@ -156,9 +156,10 @@ private struct IntroContent: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             // Dawn inside the notch: a soft green light rising from its lower edge.
-            RadialGradient(colors: [Color.awakeGreen.opacity(0.30), Color.awakeGreen.opacity(0.08), .clear],
-                           center: .bottom, startRadius: 0, endRadius: model.notchSize.width * 0.55)
-                .scaleEffect(x: 1.6, y: 1, anchor: .bottom)
+            RadialGradient(colors: [Color.awakeGreen.opacity(0.38), Color.awakeGreen.opacity(0.10), .clear],
+                           center: .bottom, startRadius: 0, endRadius: (model.notchSize.height + Layout.introDrop) * 1.1)
+                .scaleEffect(x: (model.notchSize.width + Layout.introWing * 2) / ((model.notchSize.height + Layout.introDrop) * 2.2) * 0.75,
+                             y: 1, anchor: .bottom)
                 .opacity(model.introGlow ? 1 : 0)
                 .allowsHitTesting(false)
             HStack {
@@ -172,13 +173,14 @@ private struct IntroContent: View {
             }
             .padding(.horizontal, 18)
             .frame(height: model.notchSize.height)
+            .frame(maxHeight: .infinity, alignment: .top)
             LinearGradient(colors: [.clear, Color(red: 0.47, green: 0.94, blue: 0.65).opacity(0.55),
                                     Color(red: 0.47, green: 0.94, blue: 0.65).opacity(0.55), .clear],
                            startPoint: .leading, endPoint: .trailing)
                 .frame(width: model.introLine ? model.notchSize.width + 60 : 0, height: 1)
                 .opacity(model.introLine ? 1 : 0)
         }
-        .frame(height: model.notchSize.height)
+        .frame(height: model.notchSize.height + Layout.introDrop)
     }
 }
 
@@ -193,7 +195,7 @@ private struct DawnGlow: View {
             .frame(width: 260, height: 70)
             .blur(radius: 6)
             .scaleEffect(x: model.introGlow ? 1 : 0.55, y: model.introGlow ? 1 : 0.7, anchor: .top)
-            .offset(y: model.notchSize.height - 8 + (model.introGlow ? -6 : 14))
+            .offset(y: model.notchSize.height + Layout.introDrop - 8 + (model.introGlow ? -6 : 14))
             .opacity(model.introGlow ? 1 : 0)
             .allowsHitTesting(false)
     }

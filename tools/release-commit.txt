@@ -1,8 +1,8 @@
-awake. 1.6.0 — languages
+awake. 1.6.1 — glow inside the notch
 
-English, Ukrainian and Russian interface (follows macOS, selectable in ⋯ → Language),
-README.uk.md, launch glow inside the notch, nothing drawn in the notch until the
-launch animation is over (fixes the app icon flashing first).
+The notch itself has no pixels, so during the launch animation the shape now drops
+10 pt below it; the inner green glow and the 1-px line live in that band and in the
+side wings, the outer dawn moves down with it.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN

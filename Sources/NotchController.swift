@@ -36,13 +36,16 @@ enum Layout {
     /// One ear, on the right of the notch: app icons while rendering, otherwise the time left.
     static let ear: CGFloat = 44
     static let introWing: CGFloat = 62
+    /// During the launch animation the shape drops this much below the notch: the notch itself has no pixels,
+    /// so the inner glow lives in this band and in the side wings.
+    static let introDrop: CGFloat = 10
 
     static func size(_ model: NotchModel) -> CGSize {
         let n = model.notchSize
         if model.isExpanded {
             return CGSize(width: max(n.width + 160, 352), height: n.height + (model.onboarding ? 116 : 80))
         }
-        if model.intro { return CGSize(width: n.width + introWing * 2, height: n.height) }
+        if model.intro { return CGSize(width: n.width + introWing * 2, height: n.height + introDrop) }
         if model.earsVisible && !model.launching { return CGSize(width: n.width + ear, height: n.height) }
         // Exactly the hardware notch (flares included), so it is invisible when idle.
         return CGSize(width: max(0, n.width - corners(false).top * 2), height: n.height)

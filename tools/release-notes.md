@@ -1,14 +1,16 @@
 **awake.** keeps your Mac awake — right from the MacBook notch.
 
 ### Download
-- **awake-1.6.0.dmg** — open and drag awake. to Applications.
-- **awake-1.6.0.zip** — the same app in a zip.
+- **awake-1.6.1.dmg** — open and drag awake. to Applications.
+- **awake-1.6.1.zip** — the same app in a zip.
 
 The app is not notarized yet: on first launch open **System Settings → Privacy & Security → Open Anyway** (or right-click the app → Open).
 
+### New in 1.6.1
+- The launch glow now shows inside the notch shape too: during the animation the shape drops a little below the notch, and a soft green light rises inside it
+
 ### New in 1.6
 - English, Ukrainian and Russian — follows the macOS language, or pick it in ⋯ → Language
-- The launch glow now lights the inside of the notch too
 - Fixed: a watched app's icon could flash in the notch before the launch animation
 
 ### What's inside
