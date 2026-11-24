@@ -66,6 +66,10 @@ struct NotchView: View {
 
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
+                if model.isExpanded {
+                    PanelInnerGlow()
+                        .transition(.opacity.animation(.easeOut(duration: 0.5)))
+                }
                 if model.isExpanded && model.onboarding {
                     OnboardingContent(model: model, awake: awake)
                         .transition(.sprout)
@@ -87,6 +91,12 @@ struct NotchView: View {
             .shadow(color: .black.opacity(model.isExpanded ? 0.5 : 0), radius: 10, y: 5)
             .offset(x: Layout.offsetX(model))
             .background(alignment: .top) { DawnGlow(model: model) }
+            .background(alignment: .top) {
+                if model.isExpanded {
+                    PanelGlow(height: size.height)
+                        .transition(.opacity.animation(.easeOut(duration: 0.5)))
+                }
+            }
             .opacity(visible ? 1 : 0)
             Spacer(minLength: 0)
         }
@@ -181,6 +191,33 @@ private struct IntroContent: View {
                 .opacity(model.introLine ? 1 : 0)
         }
         .frame(height: model.notchSize.height + Layout.introDrop)
+    }
+}
+
+/// Static soft glow under the open panel. Drawn only while the panel is open (removed from the view
+/// tree when it closes), no animation loop — rendered once, so it costs nothing while it stays open.
+private struct PanelGlow: View {
+    let height: CGFloat
+
+    var body: some View {
+        Ellipse()
+            .fill(RadialGradient(colors: [Color.awakeGreen.opacity(0.28), Color.awakeGreen.opacity(0.09), .clear],
+                                 center: .top, startRadius: 0, endRadius: 190))
+            .frame(width: 420, height: 70)
+            .blur(radius: 8)
+            .offset(y: height - 12)
+            .allowsHitTesting(false)
+    }
+}
+
+/// Soft light rising from the lower edge inside the open panel.
+private struct PanelInnerGlow: View {
+    var body: some View {
+        RadialGradient(colors: [Color.awakeGreen.opacity(0.24), Color.awakeGreen.opacity(0.08), .clear],
+                       center: .bottom, startRadius: 0, endRadius: 150)
+            .scaleEffect(x: 1.8, y: 0.75, anchor: .bottom)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .allowsHitTesting(false)
     }
 }
 

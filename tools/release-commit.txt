@@ -1,8 +1,7 @@
-awake. 1.6.1 — glow inside the notch
+awake. 1.6.2 — soft glow on the open panel
 
-The notch itself has no pixels, so during the launch animation the shape now drops
-10 pt below it; the inner green glow and the 1-px line live in that band and in the
-side wings, the outer dawn moves down with it.
+Static green glow under the open panel and rising inside it from the lower edge.
+Only in the view tree while the panel is open, no animation loop.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN
