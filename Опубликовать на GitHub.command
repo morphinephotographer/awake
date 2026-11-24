@@ -10,10 +10,10 @@ REPO="morphinephotographer/awake."
   git add -A
   git commit -q -m "awake. $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
 
-Collapsed notch: only one narrow ear on the left (app icons while rendering,
-otherwise the analog timer), nothing on the right so the menu bar stays free.
-Top row shows app icons without the word. Bottom row: autostart, display,
-lid, render.
+Notch ear moved to the right (app icons while rendering, otherwise time left),
+analog clock removed, left side always free. Hover an app icon -> popover on
+how awake. treats it. ⋯ button with a simplified options menu. ⌘Q while the
+panel is open under the pointer. Launch animation of the notch.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN" && echo COMMIT_OK || echo NOTHING_TO_COMMIT

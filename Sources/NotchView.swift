@@ -41,46 +41,6 @@ struct NotchShape: Shape {
     }
 }
 
-/// Analog clock in the style of macOS Clock: white dial, black hands, orange second hand.
-/// It shows the time that is LEFT, so the hands run backwards; for ∞ they run forward.
-struct CountdownClock: View {
-    let awake: Awake
-    var on: Bool
-    var size: CGFloat = 15
-
-    static let orange = Color(red: 1, green: 0.58, blue: 0)
-
-    var body: some View {
-        let t = awake.remaining.map { $0.rounded(.up) } ?? awake.elapsed
-        ZStack {
-            Circle().fill(Color(white: 0.97))
-            ForEach(0..<12, id: \.self) { i in
-                Capsule()
-                    .fill(Color(white: i % 3 == 0 ? 0.1 : 0.55))
-                    .frame(width: size * 0.05, height: size * (i % 3 == 0 ? 0.13 : 0.08))
-                    .offset(y: -size * 0.39)
-                    .rotationEffect(.degrees(Double(i) * 30))
-            }
-            hand(length: 0.26, width: 0.085, color: Color(white: 0.08), angle: t / 120)   // hours
-            hand(length: 0.37, width: 0.065, color: Color(white: 0.08), angle: t / 10)    // minutes
-            hand(length: 0.40, width: 0.035, color: Self.orange, angle: t * 6)            // seconds
-                .animation(.spring(response: 0.25, dampingFraction: 0.6), value: t)
-            Circle().fill(Self.orange).frame(width: size * 0.13, height: size * 0.13)
-        }
-        .frame(width: size, height: size)
-        .scaleEffect(on ? 1 : 0.01)
-        .opacity(on ? 1 : 0)
-    }
-
-    private func hand(length: CGFloat, width: CGFloat, color: Color, angle: Double) -> some View {
-        Capsule()
-            .fill(color)
-            .frame(width: max(0.8, size * width), height: size * length)
-            .offset(y: -size * length / 2)
-            .rotationEffect(.degrees(angle))
-    }
-}
-
 extension AnyTransition {
     /// Content appearing out of the notch.
     static var sprout: AnyTransition {
@@ -102,13 +62,16 @@ struct NotchView: View {
     var body: some View {
         let size = Layout.size(model)
         let c = Layout.corners(model.isExpanded)
-        let visible = model.hasNotch || model.earsVisible || model.isExpanded
+        let visible = model.hasNotch || model.earsVisible || model.isExpanded || model.intro
 
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
                 if model.isExpanded {
                     ExpandedContent(model: model, awake: awake)
                         .transition(.sprout)
+                } else if model.intro {
+                    IntroContent(model: model)
+                        .transition(.opacity.animation(.easeOut(duration: 0.2)))
                 } else if model.earsVisible {
                     CollapsedContent(model: model, awake: awake)
                         .transition(.opacity.animation(.easeOut(duration: 0.18)))
@@ -156,19 +119,57 @@ private struct CollapsedContent: View {
     let model: NotchModel
     let awake: Awake
 
-    /// Left ear only: app icons while an app renders, otherwise the analog timer.
+    /// Right ear only: app icons while an app renders, otherwise the time left.
     var body: some View {
         HStack(spacing: 0) {
+            Spacer(minLength: 0)
             Group {
                 if awake.isActive && awake.reason == .apps && !awake.watcher.active.isEmpty {
                     AppStack(awake: awake, size: 16)
                         .transition(.scale.combined(with: .opacity))
                 } else {
-                    CountdownClock(awake: awake, on: model.dotOn)
+                    Text(awake.shortText)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .fixedSize()
                 }
             }
             .frame(width: Layout.ear)
-            Spacer(minLength: 0)
+            .opacity(model.dotOn ? 1 : 0)
+            .scaleEffect(model.dotOn ? 1 : 0.6)
+        }
+        .frame(height: model.notchSize.height)
+    }
+}
+
+/// Launch: green dot on the left, "awake." on the right, a green line runs along the bottom edge.
+private struct IntroContent: View {
+    let model: NotchModel
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            HStack {
+                Circle()
+                    .fill(Color.awakeGreen)
+                    .frame(width: 7, height: 7)
+                    .shadow(color: Color.awakeGreen.opacity(0.9), radius: 5)
+                    .scaleEffect(model.introLine > 0.05 ? 1 : 0.2)
+                Spacer(minLength: 0)
+                Text("awake.")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .opacity(model.introLine > 0.05 ? 1 : 0)
+            }
+            .padding(.horizontal, 18)
+            .frame(height: model.notchSize.height)
+            Capsule()
+                .fill(Color.awakeGreen)
+                .frame(width: max(0, (model.notchSize.width + 60) * model.introLine), height: 2)
+                .shadow(color: Color.awakeGreen.opacity(0.8), radius: 4)
+                .opacity(model.introLine >= 1 ? 0.35 : 1)
+                .padding(.bottom, 2)
         }
         .frame(height: model.notchSize.height)
     }
@@ -184,15 +185,10 @@ private struct ExpandedContent: View {
         VStack(spacing: 0) {
             // Row inside the notch height (camera in the middle): clock left, time right.
             HStack {
-                CountdownClock(awake: awake, on: model.dotOn, size: 16)
-                    .overlay(alignment: .leading) {
-                        if !model.dotOn {
-                            Text("awake.")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.9))
-                                .fixedSize()
-                        }
-                    }
+                Text("awake.")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .fixedSize()
                 Spacer(minLength: 0)
                 if awake.endingSoon {
                     Button { awake.adjust(by: 15 * 60) } label: {
@@ -222,7 +218,7 @@ private struct ExpandedContent: View {
                 BigPower(awake: awake)
                 VStack(alignment: .leading, spacing: 6) {
                     DurationTrack(awake: awake)
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         IconButton(symbol: "arrow.clockwise", on: model.loginEnabled,
                                    help: model.loginEnabled ? "Автозапуск включён" : "Запускать при входе в систему") {
                             LoginItem.toggle()
@@ -242,8 +238,9 @@ private struct ExpandedContent: View {
                             awake.setWatchEnabled(!awake.watcher.enabled)
                         }
                         Spacer(minLength: 0)
-                        RunningApps(awake: awake)
+                        RunningApps(model: model, awake: awake)
                         Spacer(minLength: 0)
+                        OptionsButton(model: model, awake: awake)
                         IconButton(symbol: "xmark", on: false, danger: true, help: "Выйти из awake.") {
                             awake.stop()
                             NSApp.terminate(nil)
@@ -261,69 +258,102 @@ private struct ExpandedContent: View {
     }
 }
 
-/// Everything extra lives in the right-click menu, so the panel itself stays as it is.
+/// The extra options: right-click on the panel or the ⋯ button. Kept short — details live in submenus.
 private struct SettingsMenu: View {
     let model: NotchModel
     let awake: Awake
 
     var body: some View {
-        Menu("Следить за программами") {
-            Toggle("Следить", isOn: Binding(
-                get: { awake.watcher.enabled },
-                set: { awake.setWatchEnabled($0) }
-            ))
-            Divider()
-            ForEach(awake.watcher.rules) { rule in
-                Menu("\(rule.title) — \(rule.mode.title.lowercased())") {
-                    ForEach(WatchMode.allCases, id: \.self) { mode in
-                        Toggle(mode.title, isOn: Binding(
-                            get: { rule.mode == mode },
-                            set: { _ in awake.setWatchMode(mode, for: rule.id) }
-                        ))
-                    }
-                }
-            }
-            Divider()
-            Button("Добавить программу…") { awake.watcher.addCustomApp() }
-        }
-        Toggle("Пока идёт работа (экспорт, рендер, загрузка)", isOn: Binding(
+        Toggle(isOn: Binding(
             get: { awake.isActive && awake.reason == .activity },
             set: { on in if on { awake.startActivity() } else { awake.stop() } }
-        ))
-        Menu("До времени") {
+        )) { Label("Пока идёт работа", systemImage: "cpu") }
+
+        Menu {
             ForEach(NotchController.untilChoices(), id: \.self) { date in
                 Button("до \(Awake.hm.string(from: date))") { awake.start(until: date) }
             }
-        }
+        } label: { Label("До времени", systemImage: "clock") }
+
         if awake.isActive && awake.endDate != nil {
-            Button("+15 минут") { awake.adjust(by: 15 * 60) }
-            Button("−15 минут") { awake.adjust(by: -15 * 60) }
+            Button { awake.adjust(by: 15 * 60) } label: { Label("Ещё 15 минут", systemImage: "plus") }
+            Button { awake.adjust(by: -15 * 60) } label: { Label("Минус 15 минут", systemImage: "minus") }
         }
+
         Divider()
-        Menu("Выключать при заряде батареи") {
-            ForEach([0, 10, 20, 30], id: \.self) { pct in
-                let title: String = pct == 0 ? "Никогда" : "≤ \(pct)%"
-                Toggle(title, isOn: Binding(
-                    get: { awake.batteryLimit == pct },
-                    set: { _ in awake.setBatteryLimit(pct) }
-                ))
+
+        Menu {
+            ForEach(awake.watcher.rules) { rule in
+                Picker(selection: Binding(
+                    get: { rule.mode },
+                    set: { awake.setWatchMode($0, for: rule.id) }
+                )) {
+                    ForEach(WatchMode.allCases, id: \.self) { mode in
+                        Text(mode.short).tag(mode)
+                    }
+                } label: { Text(rule.title) }
+                .pickerStyle(.menu)
             }
-        }
-        if LidGuard.isInstalled {
-            Button("Удалить помощник закрытой крышки…") { awake.uninstallLidGuard() }
-        }
+            Divider()
+            Button("Добавить программу…") { awake.watcher.addCustomApp() }
+        } label: { Label("Программы", systemImage: "film") }
+
+        Picker(selection: Binding(
+            get: { awake.batteryLimit },
+            set: { awake.setBatteryLimit($0) }
+        )) {
+            Text("Никогда").tag(0)
+            Text("10%").tag(10)
+            Text("20%").tag(20)
+            Text("30%").tag(30)
+        } label: { Label("Выключать при заряде", systemImage: "battery.25") }
+        .pickerStyle(.menu)
+
         Divider()
-        Text("⌥⌘A — включить / выключить")
-        Text("Колёсико над панелью или ушками — ±15 мин")
-        Text("Клик по ушкам чёлки — выключить")
-        Button("Скопировать ссылку для «Быстрых команд»") {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString("awake://start?minutes=60", forType: .string)
-        }
+
+        Menu {
+            Button("Скопировать ссылку для «Быстрых команд»") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString("awake://start?minutes=60", forType: .string)
+            }
+            if LidGuard.isInstalled {
+                Button("Удалить помощник закрытой крышки…") { awake.uninstallLidGuard() }
+            }
+            Divider()
+            Text("⌥⌘A — включить или выключить")
+            Text("⌘Q на открытой панели — выйти")
+            Text("Колёсико над чёлкой — ±15 минут")
+            Text("Клик по ушку чёлки — выключить")
+        } label: { Label("Ещё", systemImage: "ellipsis.circle") }
     }
 }
 
-/// The main on/off button (twice the old in-track size).
+/// ⋯ in the bottom row: the same menu as the right click.
+private struct OptionsButton: View {
+    let model: NotchModel
+    let awake: Awake
+    @State private var hover = false
+
+    var body: some View {
+        Menu {
+            SettingsMenu(model: model, awake: awake)
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white.opacity(hover ? 0.75 : 0.45))
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(Color.white.opacity(hover ? 0.12 : 0.07)))
+                .contentShape(Circle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .onHover { hover = $0 }
+        .help("Ещё настройки")
+    }
+}
+
 private struct BigPower: View {
     let awake: Awake
     @State private var hover = false
@@ -341,7 +371,7 @@ private struct BigPower: View {
         }
         .buttonStyle(PressStyle())
         .onHover { hover = $0 }
-        .help(awake.isActive ? "Разрешить сон · правый клик — ещё" : "Не давать Mac уснуть · правый клик — ещё")
+        .help(awake.isActive ? "Разрешить сон" : "Не давать Mac уснуть")
     }
 }
 
@@ -472,8 +502,9 @@ private struct AppStack: View {
 }
 
 /// Only the watched apps that are open right now, in the free space of the bottom row.
-/// Green dot = this app is keeping the Mac awake (rendering / downloading / open).
+/// Green dot = this app keeps the Mac awake. Hover → popover with how it works.
 private struct RunningApps: View {
+    let model: NotchModel
     let awake: Awake
     static let maxIcons = 3
 
@@ -483,20 +514,7 @@ private struct RunningApps: View {
         let shown = open.count > Self.maxIcons ? Array(open.prefix(Self.maxIcons - 1)) : open
         HStack(spacing: 4) {
             ForEach(shown) { rule in
-                let active = w.active.contains(rule.id)
-                AppIconView(image: w.icon(for: rule), title: rule.title, size: 18)
-                    .opacity(active ? 1 : 0.55)
-                    .overlay(alignment: .bottomTrailing) {
-                        if active {
-                            Circle()
-                                .fill(Color.awakeGreen)
-                                .frame(width: 7, height: 7)
-                                .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
-                                .offset(x: 2, y: 2)
-                                .transition(.scale)
-                        }
-                    }
-                    .help("\(rule.title) — \(active ? rule.mode.verb : "открыта, ждёт работы") · \(rule.mode.title.lowercased())")
+                AppBadge(model: model, awake: awake, rule: rule, active: w.active.contains(rule.id))
                     .transition(.scale.combined(with: .opacity))
             }
             if open.count > shown.count {
@@ -510,5 +528,86 @@ private struct RunningApps: View {
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: open.map(\.id))
         .animation(.easeOut(duration: 0.2), value: w.active)
+    }
+}
+
+private struct AppBadge: View {
+    let model: NotchModel
+    let awake: Awake
+    let rule: WatchRule
+    let active: Bool
+    @State private var show = false
+    @State private var hoverTask: Task<Void, Never>?
+
+    var body: some View {
+        AppIconView(image: awake.watcher.icon(for: rule), title: rule.title, size: 18)
+            .opacity(active ? 1 : 0.55)
+            .overlay(alignment: .bottomTrailing) {
+                if active {
+                    Circle()
+                        .fill(Color.awakeGreen)
+                        .frame(width: 7, height: 7)
+                        .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
+                        .offset(x: 2, y: 2)
+                        .transition(.scale)
+                }
+            }
+            .contentShape(Rectangle())
+            .onHover { inside in
+                hoverTask?.cancel()
+                hoverTask = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(inside ? 300 : 150))
+                    guard !Task.isCancelled else { return }
+                    show = inside
+                }
+            }
+            .popover(isPresented: $show, arrowEdge: .bottom) {
+                WatchInfo(rule: rule, active: active)
+            }
+            .onChange(of: show) { _, open in model.popoverOpen = open }
+            .onDisappear { model.popoverOpen = false }
+    }
+}
+
+/// How awake. treats this app.
+private struct WatchInfo: View {
+    let rule: WatchRule
+    let active: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(rule.title).font(.system(size: 13, weight: .semibold))
+                Spacer(minLength: 0)
+                Text(active ? "держит Mac" : "ждёт работы")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(active ? Color.awakeGreen : .secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill((active ? Color.awakeGreen : Color.secondary).opacity(0.15)))
+            }
+            Text(description)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Режим меняется в меню ⋯ → Программы.")
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(14)
+        .frame(width: 280)
+    }
+
+    private var description: String {
+        switch rule.mode {
+        case .render:
+            return "Пока \(rule.title) рендерит или экспортирует — заметно нагружает процессор или записывает файлы — awake. не даёт Mac уснуть. Когда работа закончится, awake. подождёт 2 минуты и вернёт обычный сон. Если выключить ⏻ вручную, awake. включится снова только при следующем рендере."
+        case .download:
+            return "Пока \(rule.title) качает файлы, Mac не уснёт. После окончания загрузки awake. подождёт 2 минуты и вернёт обычный сон."
+        case .open:
+            return "Пока \(rule.title) открыт, Mac не уснёт. Закроешь программу — сон вернётся."
+        case .off:
+            return "awake. не следит за этой программой."
+        }
     }
 }

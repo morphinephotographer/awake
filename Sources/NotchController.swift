@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import Observation
 import SwiftUI
 
@@ -13,25 +14,32 @@ final class NotchModel {
     /// Side "ears" with the eye and the timer (lag behind Awake.isActive for the closing-eye animation).
     var earsVisible = false
     var dotOn = false
+    /// A popover over an app icon is open — keep the panel expanded.
+    var popoverOpen = false
+    /// Launch animation.
+    var intro = false
+    var introLine: CGFloat = 0
 }
 
 /// Sizes shared by the SwiftUI view and the hover hit-testing.
 @MainActor
 enum Layout {
-    /// Only one ear, on the left of the notch — the right side stays free for the menu bar.
-    static let ear: CGFloat = 36
+    /// One ear, on the right of the notch: app icons while rendering, otherwise the time left.
+    static let ear: CGFloat = 44
+    static let introWing: CGFloat = 62
 
     static func size(_ model: NotchModel) -> CGSize {
         let n = model.notchSize
         if model.isExpanded { return CGSize(width: max(n.width + 160, 352), height: n.height + 80) }
+        if model.intro { return CGSize(width: n.width + introWing * 2, height: n.height) }
         if model.earsVisible { return CGSize(width: n.width + ear, height: n.height) }
         // Exactly the hardware notch (flares included), so it is invisible when idle.
         return CGSize(width: max(0, n.width - corners(false).top * 2), height: n.height)
     }
 
-    /// Collapsed with the ear: the shape is shifted left so the notch stays in place.
+    /// Collapsed with the ear: the shape is shifted right so the notch stays in place.
     static func offsetX(_ model: NotchModel) -> CGFloat {
-        (!model.isExpanded && model.earsVisible) ? -ear / 2 : 0
+        (!model.isExpanded && !model.intro && model.earsVisible) ? ear / 2 : 0
     }
 
     static func corners(_ expanded: Bool) -> (top: CGFloat, bottom: CGFloat) {
@@ -80,6 +88,8 @@ final class NotchController {
     private var pendingTask: Task<Void, Never>?
     private var watchdog: Timer?
     private var hotKey: HotKey?
+    /// ⌘Q — only while the open panel is under the pointer.
+    private var quitKey: HotKey?
     private var scrollAccum: CGFloat = 0
     private var lastScrollStep = Date.distantPast
 
@@ -103,14 +113,13 @@ final class NotchController {
         }) { monitors.append(l) }
 
         // ⌥⌘A toggles from anywhere.
-        HotKey.action = { [weak self] in
+        hotKey = HotKey(id: 1, keyCode: UInt32(kVK_ANSI_A), modifiers: UInt32(cmdKey | optionKey)) { [weak self] in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 self.awake.toggle()
                 self.peek(ms: 1600)
             }
         }
-        hotKey = HotKey()
 
         // One minute left → show the panel with "+15м" for a few seconds.
         awake.onEndingSoon = { [weak self] in
@@ -131,10 +140,18 @@ final class NotchController {
             }
         })
 
-        // A short peek on launch so it is clear where the app lives.
+        // Launch animation: the notch stretches into a pill — green dot left, "awake." right —
+        // a green line runs along its lower edge, then it slides back into the notch.
         Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(400))
-            self?.peek(ms: 2000)
+            try? await Task.sleep(for: .milliseconds(350))
+            guard let self else { return }
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) { self.model.intro = true }
+            try? await Task.sleep(for: .milliseconds(180))
+            withAnimation(.easeInOut(duration: 0.95)) { self.model.introLine = 1 }
+            try? await Task.sleep(for: .milliseconds(1250))
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { self.model.intro = false }
+            try? await Task.sleep(for: .milliseconds(500))
+            self.model.introLine = 0
         }
     }
 
@@ -240,7 +257,8 @@ final class NotchController {
         let p = NSEvent.mouseLocation
         if model.isExpanded {
             let inside = rect(Layout.size(model)).insetBy(dx: -16, dy: -16).contains(p)
-            if inside || model.menuOpen { cancelPending() } else { schedule(.collapse, ms: 260) }
+            setQuitKey(inside || model.menuOpen)
+            if inside || model.menuOpen || model.popoverOpen { cancelPending() } else { schedule(.collapse, ms: 260) }
         } else {
             // With ears out only the notch itself expands the panel; the ears take clicks and scrolls.
             let hotSize = model.earsVisible ? model.notchSize : Layout.size(model)
@@ -249,11 +267,21 @@ final class NotchController {
         }
     }
 
-    /// The single (left) ear of the collapsed notch, in screen coordinates.
+    /// The single (right) ear of the collapsed notch, in screen coordinates.
     private func earRects() -> [CGRect] {
-        guard model.earsVisible, !model.isExpanded else { return [] }
+        guard model.earsVisible, !model.isExpanded, !model.intro else { return [] }
         let n = model.notchSize
-        return [CGRect(x: midX - n.width / 2 - Layout.ear, y: top - n.height, width: Layout.ear, height: n.height + 2)]
+        return [CGRect(x: midX + n.width / 2, y: top - n.height, width: Layout.ear, height: n.height + 2)]
+    }
+
+    private func setQuitKey(_ on: Bool) {
+        if on, quitKey == nil {
+            quitKey = HotKey(id: 2, keyCode: UInt32(kVK_ANSI_Q), modifiers: UInt32(cmdKey)) {
+                MainActor.assumeIsolated { NSApp.terminate(nil) }
+            }
+        } else if !on, quitKey != nil {
+            quitKey = nil
+        }
     }
 
     private func handleClick() {
@@ -309,7 +337,8 @@ final class NotchController {
     }
 
     private func collapse() {
-        guard model.isExpanded, !model.menuOpen else { return }
+        guard model.isExpanded, !model.menuOpen, !model.popoverOpen else { return }
+        setQuitKey(false)
         model.isExpanded = false
         panel?.ignoresMouseEvents = true
         watchdog?.invalidate()

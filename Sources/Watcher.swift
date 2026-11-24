@@ -16,6 +16,15 @@ enum WatchMode: String, CaseIterable {
         }
     }
 
+    var short: String {
+        switch self {
+        case .render: return "Рендер и экспорт"
+        case .download: return "Загрузка"
+        case .open: return "Пока открыта"
+        case .off: return "Не следить"
+        }
+    }
+
     var verb: String {
         switch self {
         case .render: return "рендер"
