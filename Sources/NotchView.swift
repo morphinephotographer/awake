@@ -654,7 +654,7 @@ private struct AppStack: View {
     let size: CGFloat
 
     var body: some View {
-        let ids = Array(awake.watcher.active.prefix(2))
+        let ids = Array(awake.watcher.uniqueByIcon(awake.watcher.active).prefix(2))
         HStack(spacing: -size * 0.3) {
             ForEach(ids, id: \.self) { id in
                 if let rule = awake.watcher.rule(id) {
@@ -674,7 +674,11 @@ private struct RunningApps: View {
 
     var body: some View {
         let w = awake.watcher
-        let open = w.enabled ? w.rules.filter { $0.mode != .off && w.running.contains($0.id) } : []
+        let all = w.enabled ? w.rules.filter { $0.mode != .off && w.running.contains($0.id) } : []
+        // One badge per icon: the ChatGPT app and Codex CLI share one, the busy one speaks for both.
+        let ordered = all.filter { w.active.contains($0.id) } + all.filter { !w.active.contains($0.id) }
+        let firstIDs = Set(w.uniqueByIcon(ordered.map(\.id)))
+        let open = all.filter { firstIDs.contains($0.id) }
         let shown = open.count > Self.maxIcons ? Array(open.prefix(Self.maxIcons - 1)) : open
         HStack(spacing: 4) {
             ForEach(shown) { rule in

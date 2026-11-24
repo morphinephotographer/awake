@@ -1,7 +1,7 @@
-awake. 1.7.1 — hide the app icon from the notch
+awake. 1.7.2 — no duplicate app icons in the notch
 
-Setting in ⋯ → Apps: «App icon in the notch». Off → while a watched app keeps the Mac
-awake, the collapsed notch shows nothing; icons stay in the open panel.
+One icon per app: the ChatGPT app and Codex CLI (Claude and Claude Code) share an icon,
+so the notch and the open panel show it once. The busy one speaks for the group.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN

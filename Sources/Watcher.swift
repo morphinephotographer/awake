@@ -88,6 +88,7 @@ final class Watcher {
     @ObservationIgnored private var lastBusy: [String: Date] = [:]
     @ObservationIgnored private var previous: [String: (cpu: Double, disk: UInt64, at: Date)] = [:]
     @ObservationIgnored private var icons: [String: NSImage] = [:]
+    @ObservationIgnored private var appURLs: [String: URL] = [:]
     @ObservationIgnored private var installedApps: [(url: URL, bundleID: String?, name: String)] = []
     @ObservationIgnored private var strangerCPU: [String: (cpu: Double, at: Date)] = [:]
     @ObservationIgnored private var strangerBusySince: [String: Date] = [:]
@@ -230,6 +231,7 @@ final class Watcher {
                 : Self.cliInstalled(rule.processes)
         }.map(\.id))
         icons = [:]
+        appURLs = [:]
     }
 
     /// Downloads a newer catalog at most once a week.
@@ -253,16 +255,38 @@ final class Watcher {
 
     func icon(for rule: WatchRule) -> NSImage? {
         if let cached = icons[rule.id] { return cached }
-        if !rule.processes.isEmpty {
-            // A terminal agent: the icon of its app (Claude Code → Claude), otherwise Terminal.
-            let url = (rule.iconBundles + ["com.apple.Terminal"]).lazy
-                .compactMap { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) }.first
-            return url.map { cacheIcon(NSWorkspace.shared.icon(forFile: $0.path), id: rule.id) }
-        }
-        let url = installedApps.first { matches(rule, bundleID: $0.bundleID, name: $0.name) }?.url
-            ?? NSWorkspace.shared.runningApplications.first { matches(rule, app: $0) }?.bundleURL
-        guard let url else { return nil }
+        guard let url = appURL(for: rule) else { return nil }
         return cacheIcon(NSWorkspace.shared.icon(forFile: url.path), id: rule.id)
+    }
+
+    /// The app whose icon stands for this rule.
+    /// A terminal agent uses its app (Claude Code → Claude, Codex → ChatGPT), otherwise Terminal.
+    private func appURL(for rule: WatchRule) -> URL? {
+        if let cached = appURLs[rule.id] { return cached }
+        let url: URL?
+        if !rule.processes.isEmpty {
+            url = (rule.iconBundles + ["com.apple.Terminal"]).lazy
+                .compactMap { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) }.first
+        } else {
+            url = installedApps.first { matches(rule, bundleID: $0.bundleID, name: $0.name) }?.url
+                ?? NSWorkspace.shared.runningApplications.first { matches(rule, app: $0) }?.bundleURL
+        }
+        if let url { appURLs[rule.id] = url.standardizedFileURL }
+        return url?.standardizedFileURL
+    }
+
+    /// Same key = same icon on screen (the ChatGPT app and Codex CLI, Claude and Claude Code).
+    func iconKey(for rule: WatchRule) -> String {
+        appURL(for: rule)?.path ?? "rule:" + rule.id
+    }
+
+    /// Rule IDs with one entry per icon: the first of each group, order kept.
+    func uniqueByIcon(_ ids: [String]) -> [String] {
+        var seen = Set<String>()
+        return ids.filter { id in
+            guard let r = rule(id) else { return false }
+            return seen.insert(iconKey(for: r)).inserted
+        }
     }
 
     func icon(for s: WatchSuggestion) -> NSImage? {

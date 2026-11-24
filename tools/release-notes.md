@@ -1,10 +1,13 @@
 **awake.** keeps your Mac awake — right from the MacBook notch.
 
 ### Download
-- **awake-1.7.1.dmg** — open and drag awake. to Applications.
-- **awake-1.7.1.zip** — the same app in a zip.
+- **awake-1.7.2.dmg** — open and drag awake. to Applications.
+- **awake-1.7.2.zip** — the same app in a zip.
 
 The app is not notarized yet: on first launch open **System Settings → Privacy & Security → Open Anyway** (or right-click the app → Open).
+
+### New in 1.7.2
+- No more doubled icons: when the ChatGPT app and Codex CLI (or Claude and Claude Code) work at once, the notch shows one ChatGPT / Claude icon
 
 ### New in 1.7.1
 - ⋯ → Apps → «App icon in the notch»: turn it off to keep the collapsed notch clean while an app renders — the icons stay in the open panel
