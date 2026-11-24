@@ -18,14 +18,20 @@ final class NotchModel {
 /// Sizes shared by the SwiftUI view and the hover hit-testing.
 @MainActor
 enum Layout {
-    static let ear: CGFloat = 50
+    /// Only one ear, on the left of the notch — the right side stays free for the menu bar.
+    static let ear: CGFloat = 36
 
     static func size(_ model: NotchModel) -> CGSize {
         let n = model.notchSize
         if model.isExpanded { return CGSize(width: max(n.width + 160, 352), height: n.height + 80) }
-        if model.earsVisible { return CGSize(width: n.width + ear * 2, height: n.height) }
+        if model.earsVisible { return CGSize(width: n.width + ear, height: n.height) }
         // Exactly the hardware notch (flares included), so it is invisible when idle.
         return CGSize(width: max(0, n.width - corners(false).top * 2), height: n.height)
+    }
+
+    /// Collapsed with the ear: the shape is shifted left so the notch stays in place.
+    static func offsetX(_ model: NotchModel) -> CGFloat {
+        (!model.isExpanded && model.earsVisible) ? -ear / 2 : 0
     }
 
     static func corners(_ expanded: Bool) -> (top: CGFloat, bottom: CGFloat) {
@@ -243,16 +249,11 @@ final class NotchController {
         }
     }
 
-    /// Left and right ears of the collapsed notch (screen coordinates).
+    /// The single (left) ear of the collapsed notch, in screen coordinates.
     private func earRects() -> [CGRect] {
         guard model.earsVisible, !model.isExpanded else { return [] }
         let n = model.notchSize
-        let full = Layout.size(model)
-        let w = (full.width - n.width) / 2
-        return [
-            CGRect(x: midX - full.width / 2, y: top - n.height, width: w, height: n.height + 2),
-            CGRect(x: midX + n.width / 2, y: top - n.height, width: w, height: n.height + 2)
-        ]
+        return [CGRect(x: midX - n.width / 2 - Layout.ear, y: top - n.height, width: Layout.ear, height: n.height + 2)]
     }
 
     private func handleClick() {

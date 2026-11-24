@@ -10,9 +10,10 @@ REPO="morphinephotographer/awake."
   git add -A
   git commit -q -m "awake. $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
 
-Open watched apps now sit in the free space of the bottom row (max 3, +N),
-separate icon row removed — panel back to its compact height. Auto-start by
-apps is skipped when the battery is at or below the chosen limit.
+Collapsed notch: only one narrow ear on the left (app icons while rendering,
+otherwise the analog timer), nothing on the right so the menu bar stays free.
+Top row shows app icons without the word. Bottom row: autostart, display,
+lid, render.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN" && echo COMMIT_OK || echo NOTHING_TO_COMMIT

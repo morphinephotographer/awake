@@ -119,6 +119,7 @@ struct NotchView: View {
             .background(Color.black)
             .clipShape(NotchShape(top: c.top, bottom: c.bottom))
             .shadow(color: .black.opacity(model.isExpanded ? 0.5 : 0), radius: 10, y: 5)
+            .offset(x: Layout.offsetX(model))
             .opacity(visible ? 1 : 0)
             Spacer(minLength: 0)
         }
@@ -155,21 +156,20 @@ private struct CollapsedContent: View {
     let model: NotchModel
     let awake: Awake
 
+    /// Left ear only: app icons while an app renders, otherwise the analog timer.
     var body: some View {
-        HStack {
-            if awake.isActive && awake.reason == .apps && !awake.watcher.active.isEmpty {
-                AppStack(awake: awake, size: 15)
-                    .transition(.scale.combined(with: .opacity))
-            } else {
-                CountdownClock(awake: awake, on: model.dotOn)
+        HStack(spacing: 0) {
+            Group {
+                if awake.isActive && awake.reason == .apps && !awake.watcher.active.isEmpty {
+                    AppStack(awake: awake, size: 16)
+                        .transition(.scale.combined(with: .opacity))
+                } else {
+                    CountdownClock(awake: awake, on: model.dotOn)
+                }
             }
+            .frame(width: Layout.ear)
             Spacer(minLength: 0)
-            Text(awake.shortText)
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(.white)
         }
-        .padding(.horizontal, 16)
         .frame(height: model.notchSize.height)
     }
 }
@@ -206,10 +206,9 @@ private struct ExpandedContent: View {
                     .buttonStyle(PressStyle())
                     .transition(.scale.combined(with: .opacity))
                 }
-                HStack(spacing: 5) {
-                    if awake.isActive && awake.reason == .apps && !awake.watcher.active.isEmpty {
-                        AppStack(awake: awake, size: 15)
-                    }
+                if awake.isActive && awake.reason == .apps && !awake.watcher.active.isEmpty {
+                    AppStack(awake: awake, size: 15)
+                } else {
                     Text(awake.longText)
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .monospacedDigit()
@@ -224,6 +223,11 @@ private struct ExpandedContent: View {
                 VStack(alignment: .leading, spacing: 6) {
                     DurationTrack(awake: awake)
                     HStack(spacing: 6) {
+                        IconButton(symbol: "arrow.clockwise", on: model.loginEnabled,
+                                   help: model.loginEnabled ? "Автозапуск включён" : "Запускать при входе в систему") {
+                            LoginItem.toggle()
+                            model.loginEnabled = LoginItem.isEnabled
+                        }
                         IconButton(symbol: awake.keepDisplay ? "sun.max.fill" : "moon.fill",
                                    on: awake.keepDisplay,
                                    help: awake.keepDisplay ? "Экран не гаснет" : "Экран может погаснуть, Mac не уснёт") {
@@ -232,11 +236,6 @@ private struct ExpandedContent: View {
                         IconButton(symbol: "laptopcomputer", on: awake.lidMode,
                                    help: awake.lidMode ? "Работает с закрытой крышкой" : "Работать с закрытой крышкой") {
                             awake.setLidMode(!awake.lidMode)
-                        }
-                        IconButton(symbol: "arrow.clockwise", on: model.loginEnabled,
-                                   help: model.loginEnabled ? "Автозапуск включён" : "Запускать при входе в систему") {
-                            LoginItem.toggle()
-                            model.loginEnabled = LoginItem.isEnabled
                         }
                         IconButton(symbol: "film", on: awake.watcher.enabled,
                                    help: awake.watcher.enabled ? "Следит за рендером в твоих программах" : "Не следить за программами") {
