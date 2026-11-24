@@ -10,7 +10,8 @@
    "names": [
     "photoshop"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "lightroom",
@@ -23,7 +24,8 @@
    "names": [
     "lightroom"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "bridge",
@@ -34,7 +36,8 @@
    "names": [
     "adobe bridge"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "premiere",
@@ -45,7 +48,8 @@
    "names": [
     "premiere pro"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "aftereffects",
@@ -56,7 +60,8 @@
    "names": [
     "after effects"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "mediaencoder",
@@ -67,7 +72,8 @@
    "names": [
     "media encoder"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "audition",
@@ -78,7 +84,8 @@
    "names": [
     "adobe audition"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "audio"
   },
   {
    "id": "illustrator",
@@ -89,7 +96,8 @@
    "names": [
     "illustrator"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "indesign",
@@ -100,7 +108,8 @@
    "names": [
     "indesign"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "captureone",
@@ -112,7 +121,8 @@
    "names": [
     "capture one"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "dxophotolab",
@@ -124,7 +134,8 @@
    "names": [
     "dxo photolab"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "dxopureraw",
@@ -136,7 +147,8 @@
    "names": [
     "pureraw"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "affinity",
@@ -148,7 +160,8 @@
    "names": [
     "affinity"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "pixelmator",
@@ -159,7 +172,8 @@
    "names": [
     "pixelmator"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "luminar",
@@ -170,7 +184,8 @@
    "names": [
     "luminar"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "on1",
@@ -181,7 +196,8 @@
    "names": [
     "on1 photo"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "topaz",
@@ -192,7 +208,8 @@
    "names": [
     "topaz"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "dodgeburn",
@@ -201,7 +218,8 @@
    "names": [
     "retouch4me"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "reblum",
@@ -210,7 +228,8 @@
    "names": [
     "reblum"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "evoto",
@@ -219,7 +238,8 @@
    "names": [
     "evoto"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "aftershoot",
@@ -228,7 +248,8 @@
    "names": [
     "aftershoot"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "portraitpro",
@@ -238,7 +259,8 @@
     "portraitpro",
     "portrait pro"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "photo"
   },
   {
    "id": "finalcut",
@@ -249,7 +271,8 @@
    "names": [
     "final cut pro"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "compressor",
@@ -260,7 +283,8 @@
    "names": [
     "compressor"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "motion",
@@ -269,7 +293,8 @@
     "com.apple.motionapp"
    ],
    "names": [],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "imovie",
@@ -280,7 +305,8 @@
    "names": [
     "imovie"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "davinci",
@@ -291,7 +317,8 @@
    "names": [
     "davinci resolve"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "capcut",
@@ -303,7 +330,8 @@
    "names": [
     "capcut"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "handbrake",
@@ -314,7 +342,8 @@
    "names": [
     "handbrake"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "shutterencoder",
@@ -323,7 +352,8 @@
    "names": [
     "shutter encoder"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "filmora",
@@ -334,7 +364,8 @@
    "names": [
     "filmora"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "screenflow",
@@ -345,7 +376,8 @@
    "names": [
     "screenflow"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "descript",
@@ -356,7 +388,8 @@
    "names": [
     "descript"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "video"
   },
   {
    "id": "blender",
@@ -367,7 +400,8 @@
    "names": [
     "blender"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "cinema4d",
@@ -379,7 +413,8 @@
    "names": [
     "cinema 4d"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "houdini",
@@ -390,7 +425,8 @@
    "names": [
     "houdini"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "unreal",
@@ -402,7 +438,8 @@
     "unreal engine",
     "unrealeditor"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "twinmotion",
@@ -411,7 +448,8 @@
    "names": [
     "twinmotion"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "lumion",
@@ -420,7 +458,8 @@
    "names": [
     "lumion"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "d5",
@@ -429,7 +468,8 @@
    "names": [
     "d5 render"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "archicad",
@@ -440,7 +480,8 @@
    "names": [
     "archicad"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "rhino",
@@ -451,7 +492,8 @@
    "names": [
     "rhino"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "sketchup",
@@ -462,7 +504,8 @@
    "names": [
     "sketchup"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "3d"
   },
   {
    "id": "xcode",
@@ -471,7 +514,8 @@
     "com.apple.dt.Xcode"
    ],
    "names": [],
-   "mode": "render"
+   "mode": "render",
+   "category": "dev"
   },
   {
    "id": "logic",
@@ -482,7 +526,8 @@
    "names": [
     "logic pro"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "audio"
   },
   {
    "id": "garageband",
@@ -493,7 +538,8 @@
    "names": [
     "garageband"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "audio"
   },
   {
    "id": "ableton",
@@ -504,7 +550,8 @@
    "names": [
     "ableton live"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "audio"
   },
   {
    "id": "flstudio",
@@ -515,7 +562,8 @@
    "names": [
     "fl studio"
    ],
-   "mode": "render"
+   "mode": "render",
+   "category": "audio"
   },
   {
    "id": "transmission",
@@ -526,7 +574,8 @@
    "names": [
     "transmission"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "qbittorrent",
@@ -537,7 +586,8 @@
    "names": [
     "qbittorrent"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "motrix",
@@ -548,7 +598,8 @@
    "names": [
     "motrix"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "folx",
@@ -559,7 +610,8 @@
    "names": [
     "folx"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "downie",
@@ -570,7 +622,8 @@
    "names": [
     "downie"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "utorrent",
@@ -582,7 +635,8 @@
     "utorrent",
     "µtorrent"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "jdownloader",
@@ -591,7 +645,8 @@
    "names": [
     "jdownloader"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "fdm",
@@ -602,7 +657,8 @@
    "names": [
     "free download manager"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "toreo",
@@ -611,7 +667,8 @@
    "names": [
     "toreo"
    ],
-   "mode": "download"
+   "mode": "download",
+   "category": "download"
   },
   {
    "id": "teleo",
@@ -620,7 +677,8 @@
    "names": [
     "teleo"
    ],
-   "mode": "open"
+   "mode": "open",
+   "category": "stream"
   },
   {
    "id": "obs",
@@ -631,7 +689,8 @@
    "names": [
     "obs studio"
    ],
-   "mode": "open"
+   "mode": "open",
+   "category": "stream"
   },
   {
    "id": "ecamm",
@@ -642,7 +701,8 @@
    "names": [
     "ecamm live"
    ],
-   "mode": "open"
+   "mode": "open",
+   "category": "stream"
   }
  ]
 }
