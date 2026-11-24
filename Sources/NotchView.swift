@@ -66,7 +66,10 @@ struct NotchView: View {
 
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
-                if model.isExpanded {
+                if model.isExpanded && model.onboarding {
+                    OnboardingContent(model: model, awake: awake)
+                        .transition(.sprout)
+                } else if model.isExpanded {
                     ExpandedContent(model: model, awake: awake)
                         .transition(.sprout)
                 } else if model.intro {
@@ -83,6 +86,7 @@ struct NotchView: View {
             .clipShape(NotchShape(top: c.top, bottom: c.bottom))
             .shadow(color: .black.opacity(model.isExpanded ? 0.5 : 0), radius: 10, y: 5)
             .offset(x: Layout.offsetX(model))
+            .background(alignment: .top) { DawnGlow(model: model) }
             .opacity(visible ? 1 : 0)
             Spacer(minLength: 0)
         }
@@ -144,34 +148,120 @@ private struct CollapsedContent: View {
     }
 }
 
-/// Launch: green dot on the left, "awake." on the right, a green line runs along the bottom edge.
+/// Launch "Восход": "awake." appears out of a blur on the right, a 1-px line of light along the bottom.
 private struct IntroContent: View {
     let model: NotchModel
 
     var body: some View {
         ZStack(alignment: .bottom) {
             HStack {
-                Circle()
-                    .fill(Color.awakeGreen)
-                    .frame(width: 7, height: 7)
-                    .shadow(color: Color.awakeGreen.opacity(0.9), radius: 5)
-                    .scaleEffect(model.introLine > 0.05 ? 1 : 0.2)
                 Spacer(minLength: 0)
-                Text("awake.")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .opacity(model.introLine > 0.05 ? 1 : 0)
+                (Text("awake").foregroundStyle(.white.opacity(0.92)) + Text(".").foregroundStyle(Color.awakeGreen))
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .tracking(0.3)
+                    .opacity(model.introText ? 1 : 0)
+                    .blur(radius: model.introText ? 0 : 3)
+                    .offset(y: model.introText ? 0 : 2)
             }
             .padding(.horizontal, 18)
             .frame(height: model.notchSize.height)
-            Capsule()
-                .fill(Color.awakeGreen)
-                .frame(width: max(0, (model.notchSize.width + 60) * model.introLine), height: 2)
-                .shadow(color: Color.awakeGreen.opacity(0.8), radius: 4)
-                .opacity(model.introLine >= 1 ? 0.35 : 1)
-                .padding(.bottom, 2)
+            LinearGradient(colors: [.clear, Color(red: 0.47, green: 0.94, blue: 0.65).opacity(0.55),
+                                    Color(red: 0.47, green: 0.94, blue: 0.65).opacity(0.55), .clear],
+                           startPoint: .leading, endPoint: .trailing)
+                .frame(width: model.introLine ? model.notchSize.width + 60 : 0, height: 1)
+                .opacity(model.introLine ? 1 : 0)
         }
         .frame(height: model.notchSize.height)
+    }
+}
+
+/// Soft green dawn rising from under the notch during the launch animation.
+private struct DawnGlow: View {
+    let model: NotchModel
+
+    var body: some View {
+        Ellipse()
+            .fill(RadialGradient(colors: [Color.awakeGreen.opacity(0.32), Color.awakeGreen.opacity(0.10), .clear],
+                                 center: .top, startRadius: 0, endRadius: 130))
+            .frame(width: 260, height: 70)
+            .blur(radius: 6)
+            .scaleEffect(x: model.introGlow ? 1 : 0.55, y: model.introGlow ? 1 : 0.7, anchor: .top)
+            .offset(y: model.notchSize.height - 8 + (model.introGlow ? -6 : 14))
+            .opacity(model.introGlow ? 1 : 0)
+            .allowsHitTesting(false)
+    }
+}
+
+/// First launch: the apps awake. found on this Mac.
+private struct OnboardingContent: View {
+    let model: NotchModel
+    let awake: Awake
+
+    var body: some View {
+        let w = awake.watcher
+        let found = w.rules.filter { w.installed.contains($0.id) }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("awake.")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.9))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: model.notchSize.height)
+
+            Text(found.count == 1
+                 ? "Нашёл у тебя 1 программу — Mac не уснёт, пока она рендерит или экспортирует."
+                 : "Нашёл у тебя \(found.count) программ — Mac не уснёт, пока они рендерят или экспортируют.")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+
+            HStack(spacing: 5) {
+                ForEach(Array(found.prefix(9))) { rule in
+                    AppIconView(image: w.icon(for: rule), title: rule.title, size: 18)
+                        .help(rule.title)
+                }
+                if found.count > 9 {
+                    Text("+\(found.count - 9)")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+
+            HStack(spacing: 8) {
+                Button { model.finishOnboarding?(true) } label: {
+                    Text("Следить")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.black)
+                        .padding(.horizontal, 14)
+                        .frame(height: 24)
+                        .background(Capsule().fill(Color.awakeGreen))
+                }
+                .buttonStyle(PressStyle())
+                Button { model.finishOnboarding?(false) } label: {
+                    Text("Не нужно")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .padding(.horizontal, 14)
+                        .frame(height: 24)
+                        .background(Capsule().fill(Color.white.opacity(0.1)))
+                }
+                .buttonStyle(PressStyle())
+                Spacer(minLength: 0)
+                Text("настройка — в ⋯")
+                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 12)
+        }
     }
 }
 
@@ -283,7 +373,10 @@ private struct SettingsMenu: View {
         Divider()
 
         Menu {
-            ForEach(awake.watcher.rules) { rule in
+            if awake.watcher.visibleRules.isEmpty {
+                Text("Нет знакомых программ")
+            }
+            ForEach(awake.watcher.visibleRules) { rule in
                 Picker(selection: Binding(
                     get: { rule.mode },
                     set: { awake.setWatchMode($0, for: rule.id) }
@@ -325,6 +418,9 @@ private struct SettingsMenu: View {
             Text("Колёсико над чёлкой — ±15 минут")
             Text("Клик по ушку чёлки — выключить")
         } label: { Label("Ещё", systemImage: "ellipsis.circle") }
+
+        Divider()
+        Text("awake. \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · создано Morphine")
     }
 }
 
@@ -517,6 +613,10 @@ private struct RunningApps: View {
                 AppBadge(model: model, awake: awake, rule: rule, active: w.active.contains(rule.id))
                     .transition(.scale.combined(with: .opacity))
             }
+            if let suggestion = w.suggestions.first, open.count < Self.maxIcons {
+                SuggestionBadge(model: model, awake: awake, suggestion: suggestion)
+                    .transition(.scale.combined(with: .opacity))
+            }
             if open.count > shown.count {
                 Text("+\(open.count - shown.count)")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -566,6 +666,50 @@ private struct AppBadge: View {
             }
             .onChange(of: show) { _, open in model.popoverOpen = open }
             .onDisappear { model.popoverOpen = false }
+    }
+}
+
+/// A busy app outside the list: click → "follow it?".
+private struct SuggestionBadge: View {
+    let model: NotchModel
+    let awake: Awake
+    let suggestion: WatchSuggestion
+    @State private var show = false
+
+    var body: some View {
+        Button { show = true } label: {
+            AppIconView(image: awake.watcher.icon(for: suggestion), title: suggestion.title, size: 18)
+                .opacity(0.8)
+                .overlay(alignment: .bottomTrailing) {
+                    Text("?")
+                        .font(.system(size: 7.5, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color.black)
+                        .frame(width: 9, height: 9)
+                        .background(Circle().fill(Color.white))
+                        .overlay(Circle().stroke(Color.black, lineWidth: 1))
+                        .offset(x: 2.5, y: 2.5)
+                }
+        }
+        .buttonStyle(PressStyle())
+        .popover(isPresented: $show, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Следить за \(suggestion.title)?").font(.system(size: 13, weight: .semibold))
+                Text("\(suggestion.title) \(suggestion.reason). awake. может не давать Mac уснуть, пока программа работает, и отпускать сон через 2 минуты после окончания.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Не предлагать") { show = false; awake.watcher.dismiss(suggestion) }
+                    Spacer()
+                    Button("Следить") { show = false; awake.watcher.accept(suggestion) }
+                        .keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(14)
+            .frame(width: 280)
+        }
+        .onChange(of: show) { _, open in model.popoverOpen = open }
+        .onDisappear { model.popoverOpen = false }
     }
 }
 

@@ -1,0 +1,648 @@
+{
+ "version": 1,
+ "apps": [
+  {
+   "id": "photoshop",
+   "title": "Photoshop",
+   "bundles": [
+    "com.adobe.Photoshop"
+   ],
+   "names": [
+    "photoshop"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "lightroom",
+   "title": "Lightroom",
+   "bundles": [
+    "com.adobe.LightroomClassic",
+    "com.adobe.lightroomCC",
+    "com.adobe.Lightroom"
+   ],
+   "names": [
+    "lightroom"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "bridge",
+   "title": "Bridge",
+   "bundles": [
+    "com.adobe.bridge"
+   ],
+   "names": [
+    "adobe bridge"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "premiere",
+   "title": "Premiere Pro",
+   "bundles": [
+    "com.adobe.PremierePro"
+   ],
+   "names": [
+    "premiere pro"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "aftereffects",
+   "title": "After Effects",
+   "bundles": [
+    "com.adobe.AfterEffects"
+   ],
+   "names": [
+    "after effects"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "mediaencoder",
+   "title": "Media Encoder",
+   "bundles": [
+    "com.adobe.ame"
+   ],
+   "names": [
+    "media encoder"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "audition",
+   "title": "Audition",
+   "bundles": [
+    "com.adobe.Audition"
+   ],
+   "names": [
+    "adobe audition"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "illustrator",
+   "title": "Illustrator",
+   "bundles": [
+    "com.adobe.illustrator"
+   ],
+   "names": [
+    "illustrator"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "indesign",
+   "title": "InDesign",
+   "bundles": [
+    "com.adobe.InDesign"
+   ],
+   "names": [
+    "indesign"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "captureone",
+   "title": "Capture One",
+   "bundles": [
+    "com.captureone.",
+    "com.phaseone.captureone"
+   ],
+   "names": [
+    "capture one"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "dxophotolab",
+   "title": "DxO PhotoLab",
+   "bundles": [
+    "com.dxo.PhotoLab",
+    "com.dxo.photolab"
+   ],
+   "names": [
+    "dxo photolab"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "dxopureraw",
+   "title": "DxO PureRAW",
+   "bundles": [
+    "com.dxo.PureRAW",
+    "com.dxo.pureraw"
+   ],
+   "names": [
+    "pureraw"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "affinity",
+   "title": "Affinity",
+   "bundles": [
+    "com.seriflabs.",
+    "com.canva.affinity"
+   ],
+   "names": [
+    "affinity"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "pixelmator",
+   "title": "Pixelmator Pro",
+   "bundles": [
+    "com.pixelmatorteam.pixelmator"
+   ],
+   "names": [
+    "pixelmator"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "luminar",
+   "title": "Luminar",
+   "bundles": [
+    "com.skylum."
+   ],
+   "names": [
+    "luminar"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "on1",
+   "title": "ON1 Photo RAW",
+   "bundles": [
+    "com.on1."
+   ],
+   "names": [
+    "on1 photo"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "topaz",
+   "title": "Topaz",
+   "bundles": [
+    "com.topazlabs."
+   ],
+   "names": [
+    "topaz"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "dodgeburn",
+   "title": "Retouch4me",
+   "bundles": [],
+   "names": [
+    "retouch4me"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "reblum",
+   "title": "Reblum",
+   "bundles": [],
+   "names": [
+    "reblum"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "evoto",
+   "title": "Evoto",
+   "bundles": [],
+   "names": [
+    "evoto"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "aftershoot",
+   "title": "Aftershoot",
+   "bundles": [],
+   "names": [
+    "aftershoot"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "portraitpro",
+   "title": "PortraitPro",
+   "bundles": [],
+   "names": [
+    "portraitpro",
+    "portrait pro"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "finalcut",
+   "title": "Final Cut Pro",
+   "bundles": [
+    "com.apple.FinalCut"
+   ],
+   "names": [
+    "final cut pro"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "compressor",
+   "title": "Compressor",
+   "bundles": [
+    "com.apple.Compressor"
+   ],
+   "names": [
+    "compressor"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "motion",
+   "title": "Motion",
+   "bundles": [
+    "com.apple.motionapp"
+   ],
+   "names": [],
+   "mode": "render"
+  },
+  {
+   "id": "imovie",
+   "title": "iMovie",
+   "bundles": [
+    "com.apple.iMovieApp"
+   ],
+   "names": [
+    "imovie"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "davinci",
+   "title": "DaVinci Resolve",
+   "bundles": [
+    "com.blackmagic-design.DaVinciResolve"
+   ],
+   "names": [
+    "davinci resolve"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "capcut",
+   "title": "CapCut",
+   "bundles": [
+    "com.lemon.lvoverseas",
+    "com.lemon.lvpro"
+   ],
+   "names": [
+    "capcut"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "handbrake",
+   "title": "HandBrake",
+   "bundles": [
+    "fr.handbrake.HandBrake"
+   ],
+   "names": [
+    "handbrake"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "shutterencoder",
+   "title": "Shutter Encoder",
+   "bundles": [],
+   "names": [
+    "shutter encoder"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "filmora",
+   "title": "Filmora",
+   "bundles": [
+    "com.wondershare.filmora"
+   ],
+   "names": [
+    "filmora"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "screenflow",
+   "title": "ScreenFlow",
+   "bundles": [
+    "net.telestream.screenflow"
+   ],
+   "names": [
+    "screenflow"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "descript",
+   "title": "Descript",
+   "bundles": [
+    "com.descript."
+   ],
+   "names": [
+    "descript"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "blender",
+   "title": "Blender",
+   "bundles": [
+    "org.blenderfoundation.blender"
+   ],
+   "names": [
+    "blender"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "cinema4d",
+   "title": "Cinema 4D",
+   "bundles": [
+    "com.maxon.cinema4d",
+    "net.maxon.cinema4d"
+   ],
+   "names": [
+    "cinema 4d"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "houdini",
+   "title": "Houdini",
+   "bundles": [
+    "com.sidefx."
+   ],
+   "names": [
+    "houdini"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "unreal",
+   "title": "Unreal Engine",
+   "bundles": [
+    "com.epicgames.UnrealEngine"
+   ],
+   "names": [
+    "unreal engine",
+    "unrealeditor"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "twinmotion",
+   "title": "Twinmotion",
+   "bundles": [],
+   "names": [
+    "twinmotion"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "lumion",
+   "title": "Lumion",
+   "bundles": [],
+   "names": [
+    "lumion"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "d5",
+   "title": "D5 Render",
+   "bundles": [],
+   "names": [
+    "d5 render"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "archicad",
+   "title": "Archicad",
+   "bundles": [
+    "com.graphisoft."
+   ],
+   "names": [
+    "archicad"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "rhino",
+   "title": "Rhino",
+   "bundles": [
+    "com.mcneel.rhinoceros"
+   ],
+   "names": [
+    "rhino"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "sketchup",
+   "title": "SketchUp",
+   "bundles": [
+    "com.sketchup."
+   ],
+   "names": [
+    "sketchup"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "xcode",
+   "title": "Xcode",
+   "bundles": [
+    "com.apple.dt.Xcode"
+   ],
+   "names": [],
+   "mode": "render"
+  },
+  {
+   "id": "logic",
+   "title": "Logic Pro",
+   "bundles": [
+    "com.apple.logic"
+   ],
+   "names": [
+    "logic pro"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "garageband",
+   "title": "GarageBand",
+   "bundles": [
+    "com.apple.garageband"
+   ],
+   "names": [
+    "garageband"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "ableton",
+   "title": "Ableton Live",
+   "bundles": [
+    "com.ableton.live"
+   ],
+   "names": [
+    "ableton live"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "flstudio",
+   "title": "FL Studio",
+   "bundles": [
+    "com.image-line.flstudio"
+   ],
+   "names": [
+    "fl studio"
+   ],
+   "mode": "render"
+  },
+  {
+   "id": "transmission",
+   "title": "Transmission",
+   "bundles": [
+    "org.m0k.transmission"
+   ],
+   "names": [
+    "transmission"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "qbittorrent",
+   "title": "qBittorrent",
+   "bundles": [
+    "org.qbittorrent."
+   ],
+   "names": [
+    "qbittorrent"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "motrix",
+   "title": "Motrix",
+   "bundles": [
+    "app.motrix."
+   ],
+   "names": [
+    "motrix"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "folx",
+   "title": "Folx",
+   "bundles": [
+    "com.eltima.Folx"
+   ],
+   "names": [
+    "folx"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "downie",
+   "title": "Downie",
+   "bundles": [
+    "com.charliemonroe.Downie"
+   ],
+   "names": [
+    "downie"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "utorrent",
+   "title": "µTorrent",
+   "bundles": [
+    "com.bittorrent.uTorrent"
+   ],
+   "names": [
+    "utorrent",
+    "µtorrent"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "jdownloader",
+   "title": "JDownloader",
+   "bundles": [],
+   "names": [
+    "jdownloader"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "fdm",
+   "title": "Free Download Manager",
+   "bundles": [
+    "org.freedownloadmanager."
+   ],
+   "names": [
+    "free download manager"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "toreo",
+   "title": "toreo.",
+   "bundles": [],
+   "names": [
+    "toreo"
+   ],
+   "mode": "download"
+  },
+  {
+   "id": "teleo",
+   "title": "Teleo.",
+   "bundles": [],
+   "names": [
+    "teleo"
+   ],
+   "mode": "open"
+  },
+  {
+   "id": "obs",
+   "title": "OBS",
+   "bundles": [
+    "com.obsproject.obs-studio"
+   ],
+   "names": [
+    "obs studio"
+   ],
+   "mode": "open"
+  },
+  {
+   "id": "ecamm",
+   "title": "Ecamm Live",
+   "bundles": [
+    "com.ecamm."
+   ],
+   "names": [
+    "ecamm live"
+   ],
+   "mode": "open"
+  }
+ ]
+}

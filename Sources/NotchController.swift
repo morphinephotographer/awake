@@ -16,9 +16,14 @@ final class NotchModel {
     var dotOn = false
     /// A popover over an app icon is open — keep the panel expanded.
     var popoverOpen = false
-    /// Launch animation.
+    /// Launch animation ("Восход").
     var intro = false
-    var introLine: CGFloat = 0
+    var introGlow = false
+    var introText = false
+    var introLine = false
+    /// First launch: "found N apps" card.
+    var onboarding = false
+    @ObservationIgnored var finishOnboarding: ((Bool) -> Void)?
 }
 
 /// Sizes shared by the SwiftUI view and the hover hit-testing.
@@ -30,7 +35,9 @@ enum Layout {
 
     static func size(_ model: NotchModel) -> CGSize {
         let n = model.notchSize
-        if model.isExpanded { return CGSize(width: max(n.width + 160, 352), height: n.height + 80) }
+        if model.isExpanded {
+            return CGSize(width: max(n.width + 160, 352), height: n.height + (model.onboarding ? 116 : 80))
+        }
         if model.intro { return CGSize(width: n.width + introWing * 2, height: n.height) }
         if model.earsVisible { return CGSize(width: n.width + ear, height: n.height) }
         // Exactly the hardware notch (flares included), so it is invisible when idle.
@@ -113,6 +120,7 @@ final class NotchController {
         }) { monitors.append(l) }
 
         // ⌥⌘A toggles from anywhere.
+        model.finishOnboarding = { [weak self] watch in MainActor.assumeIsolated { self?.finishOnboarding(watch: watch) } }
         hotKey = HotKey(id: 1, keyCode: UInt32(kVK_ANSI_A), modifiers: UInt32(cmdKey | optionKey)) { [weak self] in
             MainActor.assumeIsolated {
                 guard let self else { return }
@@ -140,19 +148,51 @@ final class NotchController {
             }
         })
 
-        // Launch animation: the notch stretches into a pill — green dot left, "awake." right —
-        // a green line runs along its lower edge, then it slides back into the notch.
+        // Launch animation "Восход": the notch slowly opens, a soft green dawn rises under it,
+        // "awake." appears out of a blur, a 1-px line of light shows along the bottom; all fades, then it closes.
         Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(350))
+            try? await Task.sleep(for: .milliseconds(400))
             guard let self else { return }
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) { self.model.intro = true }
-            try? await Task.sleep(for: .milliseconds(180))
-            withAnimation(.easeInOut(duration: 0.95)) { self.model.introLine = 1 }
-            try? await Task.sleep(for: .milliseconds(1250))
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { self.model.intro = false }
-            try? await Task.sleep(for: .milliseconds(500))
-            self.model.introLine = 0
+            let ease = Animation.timingCurve(0.22, 1, 0.36, 1, duration: 1.1)
+            withAnimation(ease) { self.model.intro = true }
+            try? await Task.sleep(for: .milliseconds(250))
+            withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 1.3)) {
+                self.model.introGlow = true
+                self.model.introLine = true
+            }
+            try? await Task.sleep(for: .milliseconds(450))
+            withAnimation(.easeOut(duration: 0.8)) { self.model.introText = true }
+            try? await Task.sleep(for: .milliseconds(1500))
+            withAnimation(.easeInOut(duration: 0.8)) {
+                self.model.introText = false
+                self.model.introGlow = false
+                self.model.introLine = false
+            }
+            try? await Task.sleep(for: .milliseconds(350))
+            withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.9)) { self.model.intro = false }
+            try? await Task.sleep(for: .milliseconds(900))
+            self.startOnboardingIfNeeded()
         }
+    }
+
+    // MARK: First launch
+
+    private func startOnboardingIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: "onboarded") else { return }
+        guard !awake.watcher.installed.isEmpty else {
+            UserDefaults.standard.set(true, forKey: "onboarded")
+            return
+        }
+        model.onboarding = true
+        expand()
+    }
+
+    /// Called by the onboarding card buttons.
+    func finishOnboarding(watch: Bool) {
+        UserDefaults.standard.set(true, forKey: "onboarded")
+        awake.setWatchEnabled(watch)
+        withAnimation(.easeInOut(duration: 0.25)) { model.onboarding = false }
+        handleMouse()
     }
 
     // MARK: Outside control
@@ -235,7 +275,7 @@ final class NotchController {
         model.hasNotch = hasNotch
         midX = screen.frame.midX
         top = screen.frame.maxY
-        let size = CGSize(width: 440, height: h + 130)
+        let size = CGSize(width: 440, height: h + 150)
         panel?.setFrame(NSRect(x: midX - size.width / 2, y: top - size.height, width: size.width, height: size.height), display: true)
     }
 
@@ -258,7 +298,7 @@ final class NotchController {
         if model.isExpanded {
             let inside = rect(Layout.size(model)).insetBy(dx: -16, dy: -16).contains(p)
             setQuitKey(inside || model.menuOpen)
-            if inside || model.menuOpen || model.popoverOpen { cancelPending() } else { schedule(.collapse, ms: 260) }
+            if inside || model.menuOpen || model.popoverOpen || model.onboarding { cancelPending() } else { schedule(.collapse, ms: 260) }
         } else {
             // With ears out only the notch itself expands the panel; the ears take clicks and scrolls.
             let hotSize = model.earsVisible ? model.notchSize : Layout.size(model)
@@ -337,7 +377,7 @@ final class NotchController {
     }
 
     private func collapse() {
-        guard model.isExpanded, !model.menuOpen, !model.popoverOpen else { return }
+        guard model.isExpanded, !model.menuOpen, !model.popoverOpen, !model.onboarding else { return }
         setQuitKey(false)
         model.isExpanded = false
         panel?.ignoresMouseEvents = true

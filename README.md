@@ -41,3 +41,9 @@ dim = closed, bright = open, green dot = keeping the Mac awake. The notch ears a
 - **Пока качает** (toreo.): writes > 150 KB/s.
 - **Пока открыто** (Teleo.).
 Holds 2 min after the last activity. Modes per app and «Добавить программу…» — right-click → «Следить за программами».
+
+## 1.5 — for everyone
+- **Catalog** `Resources/catalog.json`: 60 known apps (photo, video, 3D, audio, downloaders) with a default mode, matched by bundle ID first, then by name. awake. checks GitHub for a newer catalog once a week (needs this repo to be public, or the file hosted elsewhere).
+- **First launch:** after the animation the panel shows the apps found on this Mac — «Следить» / «Не нужно».
+- **Any app that asks macOS not to sleep** (Final Cut, Compressor, HandBrake…) counts as busy.
+- **Suggestions:** an unknown app that asks not to sleep or uses > 1.2 cores for a minute gets a «?» icon in the bottom row — click to follow it.

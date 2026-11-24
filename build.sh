@@ -19,7 +19,7 @@ elif [ ! -f build/AppIcon.icns ]; then
 fi
 [ -f build/AppIcon.icns ] && cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-cp Resources/awake-guard.sh Resources/install-guard.sh Resources/uninstall-guard.sh Resources/local.morphine.awake.guard.plist "$APP/Contents/Resources/"
+cp Resources/awake-guard.sh Resources/install-guard.sh Resources/uninstall-guard.sh Resources/local.morphine.awake.guard.plist Resources/catalog.json "$APP/Contents/Resources/"
 
 xcrun swiftc -O -swift-version 5 \
   -target "$(uname -m)-apple-macos14.0" -module-cache-path build/.module-cache \

@@ -10,10 +10,10 @@ REPO="morphinephotographer/awake."
   git add -A
   git commit -q -m "awake. $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
 
-Notch ear moved to the right (app icons while rendering, otherwise time left),
-analog clock removed, left side always free. Hover an app icon -> popover on
-how awake. treats it. ⋯ button with a simplified options menu. ⌘Q while the
-panel is open under the pointer. Launch animation of the notch.
+Launch animation «Восход» (soft dawn + 1-px line). Built-in catalog of 60 apps
+matched by bundle ID (Resources/catalog.json, refreshed weekly), first-launch card
+with the apps found on this Mac, apps that hold their own sleep assertion count
+as busy, suggestions for busy unknown apps, version and author in the menu.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN" && echo COMMIT_OK || echo NOTHING_TO_COMMIT
