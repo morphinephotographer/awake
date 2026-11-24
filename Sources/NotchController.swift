@@ -13,6 +13,13 @@ final class NotchModel {
     /// Side "ears" with the eye and the timer (lag behind Awake.isActive for the closing-eye animation).
     var earsVisible = false
     var dotOn = false
+    /// Apps offered in "Автовключение" (running regular apps + watched ones).
+    var runningApps: [AppItem] = []
+}
+
+struct AppItem: Identifiable, Hashable {
+    let id: String
+    let name: String
 }
 
 /// Sizes shared by the SwiftUI view and the hover hit-testing.
@@ -73,6 +80,9 @@ final class NotchController {
     private var pendingKind: Pending?
     private var pendingTask: Task<Void, Never>?
     private var watchdog: Timer?
+    private var hotKey: HotKey?
+    private var scrollAccum: CGFloat = 0
+    private var lastScrollStep = Date.distantPast
 
     func start() {
         let panel = NotchPanel()
@@ -83,14 +93,30 @@ final class NotchController {
         layout()
         panel.orderFrontRegardless()
 
-        let mask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged]
-        if let g = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] _ in
-            MainActor.assumeIsolated { self?.handleMouse() }
+        let globalMask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseDown, .scrollWheel]
+        if let g = NSEvent.addGlobalMonitorForEvents(matching: globalMask, handler: { [weak self] event in
+            MainActor.assumeIsolated { self?.handleEvent(event) }
         }) { monitors.append(g) }
-        if let l = NSEvent.addLocalMonitorForEvents(matching: mask, handler: { [weak self] event in
-            MainActor.assumeIsolated { self?.handleMouse() }
+        let localMask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .scrollWheel]
+        if let l = NSEvent.addLocalMonitorForEvents(matching: localMask, handler: { [weak self] event in
+            MainActor.assumeIsolated { self?.handleEvent(event) }
             return event
         }) { monitors.append(l) }
+
+        // ⌥⌘A toggles from anywhere.
+        HotKey.action = { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.awake.toggle()
+                self.peek(ms: 1600)
+            }
+        }
+        hotKey = HotKey()
+
+        // One minute left → show the panel with "+15м" for a few seconds.
+        awake.onEndingSoon = { [weak self] in
+            MainActor.assumeIsolated { self?.peek(ms: 6000) }
+        }
 
         let nc = NotificationCenter.default
         observers.append(nc.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
@@ -109,10 +135,79 @@ final class NotchController {
         // A short peek on launch so it is clear where the app lives.
         Task { @MainActor [weak self] in
             try? await Task.sleep(for: .milliseconds(400))
-            self?.expand()
-            try? await Task.sleep(for: .milliseconds(2000))
+            self?.peek(ms: 2000)
+        }
+    }
+
+    // MARK: Outside control
+
+    /// awake://toggle · stop · start?minutes=N · until?time=HH:mm · activity
+    func handle(_ url: URL) {
+        guard url.scheme?.lowercased() == "awake" else { return }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+        switch (url.host ?? "").lowercased() {
+        case "toggle":
+            awake.toggle()
+        case "stop", "off":
+            awake.stop()
+        case "start", "on":
+            if let m = value("minutes").flatMap(Double.init), m >= 0 {
+                let d = m * 60
+                if Awake.durations.contains(d) { awake.start(preset: d) } else { awake.start(until: Date().addingTimeInterval(d)) }
+            } else {
+                awake.start(preset: awake.savedPreset)
+            }
+        case "until":
+            if let t = value("time"), let date = Self.nextOccurrence(of: t) { awake.start(until: date) }
+        case "activity":
+            awake.startActivity()
+        default:
+            return
+        }
+        peek(ms: 1600)
+    }
+
+    /// "18:30" → the next moment the clock shows it.
+    static func nextOccurrence(of text: String) -> Date? {
+        let parts = text.split(separator: ":").compactMap { Int($0) }
+        guard parts.count >= 1, (0..<24).contains(parts[0]) else { return nil }
+        let minute = parts.count > 1 ? parts[1] : 0
+        guard (0..<60).contains(minute) else { return nil }
+        return Calendar.current.nextDate(after: Date(), matching: DateComponents(hour: parts[0], minute: minute, second: 0),
+                                         matchingPolicy: .nextTime)
+    }
+
+    /// Next whole hours for "До времени" (1…8 hours ahead).
+    static func untilChoices() -> [Date] {
+        let cal = Calendar.current
+        guard let nextHour = cal.nextDate(after: Date().addingTimeInterval(10 * 60),
+                                          matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime) else { return [] }
+        return (0..<8).compactMap { cal.date(byAdding: .hour, value: $0, to: nextHour) }
+    }
+
+    /// Expand for a moment, then collapse unless the pointer is over the panel.
+    private func peek(ms: Int) {
+        expand()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(ms))
             self?.handleMouse()
         }
+    }
+
+    private func refreshApps() {
+        var items: [String: String] = [:]
+        let me = Bundle.main.bundleIdentifier
+        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
+            if let id = app.bundleIdentifier, id != me { items[id] = app.localizedName ?? id }
+        }
+        for id in awake.watchedApps where items[id] == nil {
+            let name = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id)
+                .map { $0.deletingPathExtension().lastPathComponent } ?? id
+            items[id] = name
+        }
+        model.runningApps = items.map { AppItem(id: $0.key, name: $0.value) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     // MARK: Geometry
@@ -149,15 +244,57 @@ final class NotchController {
 
     // MARK: Hover
 
+    private func handleEvent(_ event: NSEvent) {
+        switch event.type {
+        case .leftMouseDown: handleClick()
+        case .scrollWheel: handleScroll(event)
+        default: handleMouse()
+        }
+    }
+
     private func handleMouse() {
         let p = NSEvent.mouseLocation
         if model.isExpanded {
             let inside = rect(Layout.size(model)).insetBy(dx: -16, dy: -16).contains(p)
             if inside || model.menuOpen { cancelPending() } else { schedule(.collapse, ms: 260) }
         } else {
-            let hot = rect(Layout.size(model)).insetBy(dx: -4, dy: 0).contains(p)
+            // With ears out only the notch itself expands the panel; the ears take clicks and scrolls.
+            let hotSize = model.earsVisible ? model.notchSize : Layout.size(model)
+            let hot = rect(hotSize).insetBy(dx: -4, dy: 0).contains(p)
             if hot { schedule(.expand, ms: 60) } else { cancelPending() }
         }
+    }
+
+    /// Left and right ears of the collapsed notch (screen coordinates).
+    private func earRects() -> [CGRect] {
+        guard model.earsVisible, !model.isExpanded else { return [] }
+        let n = model.notchSize
+        let full = Layout.size(model)
+        let w = (full.width - n.width) / 2
+        return [
+            CGRect(x: midX - full.width / 2, y: top - n.height, width: w, height: n.height + 2),
+            CGRect(x: midX + n.width / 2, y: top - n.height, width: w, height: n.height + 2)
+        ]
+    }
+
+    private func handleClick() {
+        let p = NSEvent.mouseLocation
+        if earRects().contains(where: { $0.contains(p) }) { awake.stop() }
+    }
+
+    private func handleScroll(_ event: NSEvent) {
+        let p = NSEvent.mouseLocation
+        let overEars = earRects().contains { $0.contains(p) }
+        let overPanel = model.isExpanded && rect(Layout.size(model)).contains(p)
+        guard overEars || overPanel, awake.isActive, awake.endDate != nil else { return }
+        if event.phase == .began { scrollAccum = 0 }
+        var dy = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY / 10 : event.scrollingDeltaY
+        if event.isDirectionInvertedFromDevice { dy = -dy }
+        scrollAccum += dy
+        guard abs(scrollAccum) >= 1, Date().timeIntervalSince(lastScrollStep) > 0.2 else { return }
+        awake.adjust(by: scrollAccum > 0 ? 15 * 60 : -15 * 60)
+        scrollAccum = 0
+        lastScrollStep = Date()
     }
 
     private func schedule(_ kind: Pending, ms: Int) {
@@ -181,6 +318,7 @@ final class NotchController {
     private func expand() {
         guard !model.isExpanded else { return }
         model.loginEnabled = LoginItem.isEnabled
+        refreshApps()
         model.isExpanded = true
         panel?.ignoresMouseEvents = false
         // Safety net: re-check the pointer even if no mouse events arrive.

@@ -189,7 +189,19 @@ private struct ExpandedContent: View {
                         }
                     }
                 Spacer(minLength: 0)
-                Text(awake.isActive ? awake.longText : "выкл")
+                if awake.endingSoon {
+                    Button { awake.adjust(by: 15 * 60) } label: {
+                        Text("+15м")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.black)
+                            .padding(.horizontal, 8)
+                            .frame(height: 20)
+                            .background(Capsule().fill(Color.awakeGreen))
+                    }
+                    .buttonStyle(PressStyle())
+                    .transition(.scale.combined(with: .opacity))
+                }
+                Text(awake.longText)
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(.white.opacity(awake.isActive ? 1 : 0.4))
@@ -228,6 +240,63 @@ private struct ExpandedContent: View {
             .padding(.top, 6)
             .padding(.bottom, 12)
         }
+        .contentShape(Rectangle())
+        .contextMenu { SettingsMenu(model: model, awake: awake) }
+        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: awake.endingSoon)
+    }
+}
+
+/// Everything extra lives in the right-click menu, so the panel itself stays as it is.
+private struct SettingsMenu: View {
+    let model: NotchModel
+    let awake: Awake
+
+    var body: some View {
+        Menu("Автовключение, пока открыто") {
+            if model.runningApps.isEmpty {
+                Text("Нет открытых приложений")
+            }
+            ForEach(model.runningApps) { app in
+                Toggle(app.name, isOn: Binding(
+                    get: { awake.watchedApps.contains(app.id) },
+                    set: { _ in awake.toggleWatched(app.id) }
+                ))
+            }
+        }
+        Toggle("Пока идёт работа (экспорт, рендер, загрузка)", isOn: Binding(
+            get: { awake.isActive && awake.reason == .activity },
+            set: { on in if on { awake.startActivity() } else { awake.stop() } }
+        ))
+        Menu("До времени") {
+            ForEach(NotchController.untilChoices(), id: \.self) { date in
+                Button("до \(Awake.hm.string(from: date))") { awake.start(until: date) }
+            }
+        }
+        if awake.isActive && awake.endDate != nil {
+            Button("+15 минут") { awake.adjust(by: 15 * 60) }
+            Button("−15 минут") { awake.adjust(by: -15 * 60) }
+        }
+        Divider()
+        Menu("Выключать при заряде батареи") {
+            ForEach([0, 10, 20, 30], id: \.self) { pct in
+                let title: String = pct == 0 ? "Никогда" : "≤ \(pct)%"
+                Toggle(title, isOn: Binding(
+                    get: { awake.batteryLimit == pct },
+                    set: { _ in awake.setBatteryLimit(pct) }
+                ))
+            }
+        }
+        if LidGuard.isInstalled {
+            Button("Удалить помощник закрытой крышки…") { awake.uninstallLidGuard() }
+        }
+        Divider()
+        Text("⌥⌘A — включить / выключить")
+        Text("Колёсико над панелью или ушками — ±15 мин")
+        Text("Клик по ушкам чёлки — выключить")
+        Button("Скопировать ссылку для «Быстрых команд»") {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString("awake://start?minutes=60", forType: .string)
+        }
     }
 }
 
@@ -249,7 +318,7 @@ private struct BigPower: View {
         }
         .buttonStyle(PressStyle())
         .onHover { hover = $0 }
-        .help(awake.isActive ? "Разрешить сон" : "Не давать Mac уснуть")
+        .help(awake.isActive ? "Разрешить сон · правый клик — ещё" : "Не давать Mac уснуть · правый клик — ещё")
     }
 }
 
@@ -261,18 +330,19 @@ private struct DurationTrack: View {
     var body: some View {
         HStack(spacing: 2) {
             ForEach(Awake.durations, id: \.self) { d in
-                let selected = awake.duration == d
+                let lit = awake.isActive && awake.activePreset == d
+                let selected = awake.isActive ? lit : awake.savedPreset == d
                 Button {
-                    if awake.isActive && selected { awake.stop() } else { awake.start(d) }
+                    if lit { awake.stop() } else { awake.start(preset: d) }
                 } label: {
                     Text(Awake.label(d))
                         .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                        .foregroundStyle(selected ? (awake.isActive ? Color.black : Color.white) : Color.white.opacity(0.5))
+                        .foregroundStyle(selected ? (lit ? Color.black : Color.white) : Color.white.opacity(0.5))
                         .frame(maxWidth: .infinity, minHeight: 24)
                         .background {
                             if selected {
                                 Capsule()
-                                    .fill(awake.isActive ? Color.white : Color.white.opacity(0.14))
+                                    .fill(lit ? Color.white : Color.white.opacity(0.14))
                                     .matchedGeometryEffect(id: "pill", in: ns)
                             }
                         }
@@ -283,7 +353,8 @@ private struct DurationTrack: View {
         }
         .padding(2)
         .background(Capsule().fill(Color.white.opacity(0.07)))
-        .animation(.spring(response: 0.32, dampingFraction: 0.8), value: awake.duration)
+        .animation(.spring(response: 0.32, dampingFraction: 0.8), value: awake.activePreset)
+        .animation(.spring(response: 0.32, dampingFraction: 0.8), value: awake.savedPreset)
         .animation(.easeOut(duration: 0.18), value: awake.isActive)
     }
 }

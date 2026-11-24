@@ -24,3 +24,12 @@ sudo launchctl bootout system/local.morphine.awake.guard
 sudo rm /Library/LaunchDaemons/local.morphine.awake.guard.plist /Library/PrivilegedHelperTools/local.morphine.awake.guard
 sudo pmset -a disablesleep 0
 ```
+
+## 1.2 — extras (right-click the expanded panel)
+- **Автовключение, пока открыто** — pick apps (Capture One, DaVinci Resolve, toreo. …); awake. turns on while any of them runs.
+- **Пока идёт работа** — stays awake while CPU > 25 % or network > 300 KB/s, ends after 3 min of calm.
+- **До времени** — until the next whole hours.
+- **±15 минут** — also by scrolling over the panel or the notch ears; one minute before the end the panel pops up with **+15м**.
+- **Выключать при заряде батареи** — never / 10 / 20 / 30 % (all modes).
+- **⌥⌘A** toggles from anywhere; **click the ears** of the notch to stop.
+- Links for the Shortcuts app: `awake://toggle`, `awake://stop`, `awake://start?minutes=90`, `awake://until?time=18:30`, `awake://activity`.
