@@ -54,6 +54,11 @@ enum Loc {
     /// Russian source string → translation.
     static let table: [String: [String: String]] = [
         "en": [
+            "Пока агент работает": "While the agent works",
+            "Агент работает": "Agent at work",
+            "агент": "agent",
+            "Пока %@ выполняет задачу — думает, пишет код или управляет Маком — Mac не уснёт. Когда агент затихнет на 3 минуты, awake. вернёт обычный сон.":
+                "While %@ is on a task — thinking, writing code or driving your Mac — the Mac won't sleep. When the agent has been quiet for 3 minutes, awake. restores normal sleep.",
             "+15м": "+15m",
             "%ldм": "%ldm",
             "%ldч": "%ldh",
@@ -129,6 +134,11 @@ enum Loc {
             "Как в системе": "Same as macOS"
         ],
         "uk": [
+            "Пока агент работает": "Поки агент працює",
+            "Агент работает": "Агент працює",
+            "агент": "агент",
+            "Пока %@ выполняет задачу — думает, пишет код или управляет Маком — Mac не уснёт. Когда агент затихнет на 3 минуты, awake. вернёт обычный сон.":
+                "Поки %@ виконує завдання — думає, пише код або керує Маком — Mac не засне. Коли агент затихне на 3 хвилини, awake. поверне звичайний сон.",
             "+15м": "+15хв",
             "%ldм": "%ldхв",
             "%ldч": "%ldгод",

@@ -20,7 +20,8 @@
 
 - **Lives in the notch.** Hover the notch → a compact black panel grows out of it. Move away → it slides back.
 - **One tap.** Big ⏻ button and presets **15m · 1h · 2h · 4h · ∞**, or *until 18:00*.
-- **Render watcher.** awake. sees when Photoshop, Capture One, DaVinci Resolve, Premiere, Blender and ~60 other apps are actually working and keeps the Mac awake only for that time — then lets it sleep 2 minutes after the job is done. The app's icon appears next to the notch while it renders.
+- **Render watcher.** awake. sees when Photoshop, Capture One, DaVinci Resolve, Premiere, Blender and ~70 other apps are actually working and keeps the Mac awake only for that time — then lets it sleep 2 minutes after the job is done. The app's icon appears next to the notch while it renders.
+- **AI agents.** Claude Code, Codex CLI, Gemini CLI, Aider and other agents in Terminal, plus the Claude, ChatGPT and Cursor apps: the Mac stays awake while the agent is on a task — even when it thinks on the server and the Mac is nearly idle (3 minutes of grace).
 - **Knows your apps.** On first launch it finds the supported apps installed on your Mac and asks whether to follow them. Unknown apps that work hard get a “?” — one click to add them.
 - **Closed-lid mode.** Keep working with the lid closed (optional helper, installed once with your admin password; turns itself off when the session ends or the battery drops to 10 %).
 - **Keep the display on** or let it dim while the Mac stays awake.
@@ -39,6 +40,7 @@
 | 3D & architecture | Blender, Cinema 4D, Houdini, Unreal Engine, Twinmotion, Lumion, D5 Render, Archicad, Rhino, SketchUp | while rendering |
 | Audio | Audition, Logic Pro, GarageBand, Ableton Live, FL Studio | while bouncing / exporting |
 | Development | Xcode | while building |
+| AI agents | Claude Code, Codex CLI, Gemini CLI, Aider, OpenCode, Cursor Agent, Copilot CLI, Grok CLI, Claude, ChatGPT, Cursor | while the agent works (in Terminal too) |
 | Downloads | Transmission, qBittorrent, Motrix, Folx, Downie, µTorrent, JDownloader, Free Download Manager, toreo. | while downloading |
 | Streaming & recording | Teleo., OBS, Ecamm Live | while open |
 

@@ -1,7 +1,10 @@
-awake. 1.6.2 — soft glow on the open panel
+awake. 1.7.0 — AI agents
 
-Static green glow under the open panel and rising inside it from the lower edge.
-Only in the view tree while the panel is open, no animation loop.
+New mode «while the agent works». Terminal agents (Claude Code, Codex CLI, Gemini CLI,
+Aider, OpenCode, Cursor Agent, Copilot CLI, Grok CLI) are found among the user's
+processes (own command or node/python running it); busy = the agent and everything
+it started use > 3 % of a core. Agent apps (Claude, ChatGPT, Cursor): > 0.08 core or
+their own sleep assertion. 3-minute grace. Catalog v2 (71 apps), README in 3 languages.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN

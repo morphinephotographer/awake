@@ -1,10 +1,13 @@
 **awake.** keeps your Mac awake — right from the MacBook notch.
 
 ### Download
-- **awake-1.6.2.dmg** — open and drag awake. to Applications.
-- **awake-1.6.2.zip** — the same app in a zip.
+- **awake-1.7.0.dmg** — open and drag awake. to Applications.
+- **awake-1.7.0.zip** — the same app in a zip.
 
 The app is not notarized yet: on first launch open **System Settings → Privacy & Security → Open Anyway** (or right-click the app → Open).
+
+### New in 1.7
+- **AI agents:** Claude Code, Codex CLI, Gemini CLI, Aider, OpenCode, Cursor Agent, Copilot CLI, Grok CLI in Terminal, and the Claude, ChatGPT and Cursor apps — the Mac stays awake while the agent is on a task, with 3 minutes of grace while it thinks on the server
 
 ### New in 1.6.2
 - A soft green glow under and inside the open panel (static, only while the panel is open)

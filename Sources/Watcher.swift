@@ -6,12 +6,13 @@ import UniformTypeIdentifiers
 
 /// How awake. follows one app.
 enum WatchMode: String, CaseIterable {
-    case render, download, open, off
+    case render, download, agent, open, off
 
     var title: String {
         switch self {
         case .render: return tr("Пока работает (рендер, экспорт)")
         case .download: return tr("Пока качает")
+        case .agent: return tr("Пока агент работает")
         case .open: return tr("Пока открыто")
         case .off: return tr("Не следить")
         }
@@ -21,6 +22,7 @@ enum WatchMode: String, CaseIterable {
         switch self {
         case .render: return tr("Рендер и экспорт")
         case .download: return tr("Загрузка")
+        case .agent: return tr("Агент работает")
         case .open: return tr("Пока открыта")
         case .off: return tr("Не следить")
         }
@@ -30,6 +32,7 @@ enum WatchMode: String, CaseIterable {
         switch self {
         case .render: return tr("рендер")
         case .download: return tr("качает")
+        case .agent: return tr("агент")
         case .open: return tr("открыт")
         case .off: return ""
         }
@@ -43,6 +46,10 @@ struct WatchRule: Identifiable, Hashable {
     let bundles: [String]
     /// Lower-cased name fragments, used when the bundle ID is unknown.
     let names: [String]
+    /// Command-line agents: executable names (claude, codex…) or npm package names (@openai/codex…).
+    var processes: [String] = []
+    /// Apps whose icon stands for a command-line agent (Claude Code → Claude).
+    var iconBundles: [String] = []
     var mode: WatchMode
     let defaultMode: WatchMode
     let custom: Bool
@@ -62,6 +69,8 @@ struct WatchSuggestion: Identifiable, Hashable {
 @Observable
 final class Watcher {
     static let grace: TimeInterval = 120
+    /// Agents think on servers with the Mac nearly idle — give them longer.
+    static let agentGrace: TimeInterval = 180
     /// Weekly catalog refresh. The repository has to be public for other people to receive updates.
     static let catalogURL = URL(string: "https://raw.githubusercontent.com/morphinephotographer/awake./main/Resources/catalog.json")!
 
@@ -170,6 +179,8 @@ final class Watcher {
             let bundles: [String]
             let names: [String]
             let mode: String
+            let processes: [String]?
+            let icon: [String]?
         }
         let version: Int
         let apps: [App]
@@ -201,8 +212,11 @@ final class Watcher {
         let modes = d.dictionary(forKey: "watchModes") as? [String: String] ?? [:]
         var list: [WatchRule] = (catalog?.apps ?? []).map { a in
             let def = WatchMode(rawValue: a.mode) ?? .render
-            return WatchRule(id: a.id, title: a.title, bundles: a.bundles, names: a.names.map { $0.lowercased() },
-                             mode: modes[a.id].flatMap(WatchMode.init(rawValue:)) ?? def, defaultMode: def, custom: false)
+            var rule = WatchRule(id: a.id, title: a.title, bundles: a.bundles, names: a.names.map { $0.lowercased() },
+                                 mode: modes[a.id].flatMap(WatchMode.init(rawValue:)) ?? def, defaultMode: def, custom: false)
+            rule.processes = a.processes ?? []
+            rule.iconBundles = a.icon ?? []
+            return rule
         }
         for c in d.array(forKey: "watchCustom") as? [[String: String]] ?? [] {
             guard let id = c["id"], let title = c["title"], !list.contains(where: { $0.id == id }) else { continue }
@@ -210,7 +224,11 @@ final class Watcher {
                                   mode: modes[id].flatMap(WatchMode.init(rawValue:)) ?? .render, defaultMode: .render, custom: true))
         }
         rules = list
-        installed = Set(list.filter { rule in installedApps.contains { matches(rule, bundleID: $0.bundleID, name: $0.name) } }.map(\.id))
+        installed = Set(list.filter { rule in
+            rule.processes.isEmpty
+                ? installedApps.contains { matches(rule, bundleID: $0.bundleID, name: $0.name) }
+                : Self.cliInstalled(rule.processes)
+        }.map(\.id))
         icons = [:]
     }
 
@@ -235,6 +253,12 @@ final class Watcher {
 
     func icon(for rule: WatchRule) -> NSImage? {
         if let cached = icons[rule.id] { return cached }
+        if !rule.processes.isEmpty {
+            // A terminal agent: the icon of its app (Claude Code → Claude), otherwise Terminal.
+            let url = (rule.iconBundles + ["com.apple.Terminal"]).lazy
+                .compactMap { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) }.first
+            return url.map { cacheIcon(NSWorkspace.shared.icon(forFile: $0.path), id: rule.id) }
+        }
         let url = installedApps.first { matches(rule, bundleID: $0.bundleID, name: $0.name) }?.url
             ?? NSWorkspace.shared.runningApplications.first { matches(rule, app: $0) }?.bundleURL
         guard let url else { return nil }
@@ -258,9 +282,16 @@ final class Watcher {
     func sample(now: Date) {
         let apps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
         var open: [String: [String]] = [:] // rule id → bundle paths
-        for rule in rules {
+        for rule in rules where rule.processes.isEmpty {
             let hits = apps.filter { matches(rule, app: $0) }
             if !hits.isEmpty { open[rule.id] = hits.compactMap { $0.bundleURL?.path } }
+        }
+        // Terminal agents: found among all processes (only if one of them is followed).
+        let cliRules = rules.filter { !$0.processes.isEmpty && $0.mode != .off }
+        var cliUsage: [String: Double] = [:]
+        if enabled && !cliRules.isEmpty {
+            cliUsage = measureAgents(cliRules)
+            for id in cliUsage.keys { open[id] = [] }
         }
         if Set(open.keys) != running { running = Set(open.keys) }
         guard enabled else {
@@ -273,7 +304,7 @@ final class Watcher {
 
         // Resource use only for render / download apps that are open.
         var targets: [String: [String]] = [:]
-        for rule in rules where rule.mode == .render || rule.mode == .download {
+        for rule in rules where rule.processes.isEmpty && (rule.mode == .render || rule.mode == .download || rule.mode == .agent) {
             if let paths = open[rule.id] { targets[rule.id] = paths.map { $0.hasSuffix("/") ? $0 : $0 + "/" } }
         }
         let usage = targets.isEmpty ? [:] : measure(targets)
@@ -290,7 +321,17 @@ final class Watcher {
                 continue
             case .open:
                 next.append(rule.id)
-            case .render, .download:
+            case .agent where !rule.processes.isEmpty:
+                // Terminal agent: it and everything it started use > 3 % of a core.
+                if let cpu = cliUsage[rule.id] {
+                    if let p = previous[rule.id], now.timeIntervalSince(p.at) > 0.5,
+                       max(0, cpu - p.cpu) / now.timeIntervalSince(p.at) > 0.03 {
+                        lastBusy[rule.id] = now
+                    }
+                    previous[rule.id] = (cpu, 0, now)
+                }
+                if let last = lastBusy[rule.id], now.timeIntervalSince(last) < Self.agentGrace { next.append(rule.id) }
+            case .render, .download, .agent:
                 let prefixes = targets[rule.id] ?? []
                 if blockers.contains(where: { path in prefixes.contains { path.hasPrefix($0) } }) {
                     lastBusy[rule.id] = now
@@ -301,15 +342,19 @@ final class Watcher {
                         if dt > 0.5 {
                             let cores = max(0, u.cpu - p.cpu) / dt
                             let disk = u.disk >= p.disk ? Double(u.disk - p.disk) / dt : 0
-                            let busy = rule.mode == .render
-                                ? (cores > 0.6 || disk > 2_000_000)
-                                : (disk > 150_000 || cores > 0.15)
+                            let busy: Bool
+                            switch rule.mode {
+                            case .render: busy = cores > 0.6 || disk > 2_000_000
+                            case .agent: busy = cores > 0.08
+                            default: busy = disk > 150_000 || cores > 0.15
+                            }
                             if busy { lastBusy[rule.id] = now }
                         }
                     }
                     previous[rule.id] = (u.cpu, u.disk, now)
                 }
-                if let last = lastBusy[rule.id], now.timeIntervalSince(last) < Self.grace { next.append(rule.id) }
+                let grace = rule.mode == .agent ? Self.agentGrace : Self.grace
+                if let last = lastBusy[rule.id], now.timeIntervalSince(last) < grace { next.append(rule.id) }
             }
         }
         if next != active { active = next }
@@ -389,6 +434,93 @@ final class Watcher {
         return urls
             .filter { !$0.lastPathComponent.lowercased().contains("uninstall") }
             .map { (url: $0, bundleID: Bundle(url: $0)?.bundleIdentifier, name: $0.deletingPathExtension().lastPathComponent) }
+    }
+
+    // MARK: Terminal agents
+
+    private static let interpreters: Set<String> = ["node", "bun", "deno", "python", "python3", "python3.11", "python3.12", "python3.13"]
+
+    /// Is the agent's command installed in one of the usual places?
+    private static func cliInstalled(_ names: [String]) -> Bool {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let dirs = ["\(home)/.local/bin", "/opt/homebrew/bin", "/usr/local/bin", "\(home)/.npm-global/bin",
+                    "\(home)/.bun/bin", "\(home)/.cargo/bin", "\(home)/.claude/local"]
+        return names.filter { !$0.contains("/") && !$0.contains("@") }.contains { name in
+            dirs.contains { FileManager.default.isExecutableFile(atPath: "\($0)/\(name)") }
+        }
+    }
+
+    /// CPU seconds of each running terminal agent together with everything it started.
+    private func measureAgents(_ cliRules: [WatchRule]) -> [String: Double] {
+        let count = proc_listallpids(nil, 0)
+        guard count > 0 else { return [:] }
+        var pids = [pid_t](repeating: 0, count: Int(count) + 64)
+        let filled = pids.withUnsafeMutableBufferPointer { buf in
+            proc_listallpids(buf.baseAddress, Int32(buf.count * MemoryLayout<pid_t>.stride))
+        }
+        let uid = getuid()
+        var parent: [pid_t: pid_t] = [:]
+        var roots: [pid_t: String] = [:] // agent process → rule id
+        for pid in pids.prefix(Int(max(0, filled))) where pid > 0 {
+            var info = proc_bsdinfo()
+            let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+            guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size, info.pbi_uid == uid else { continue }
+            parent[pid] = pid_t(info.pbi_ppid)
+            let commBytes = withUnsafeBytes(of: info.pbi_comm) { Array($0) }
+            let name = String(decoding: commBytes.prefix { $0 != 0 }, as: UTF8.self)
+            if let rule = cliRules.first(where: { agent($0, pid: pid, name: name) }) { roots[pid] = rule.id }
+        }
+        guard !roots.isEmpty else { return [:] }
+        var result: [String: Double] = [:]
+        for pid in parent.keys {
+            // Walk up to the nearest agent root: its own CPU and its children's count for that agent.
+            var p = pid
+            var owner = roots[pid]
+            var hops = 0
+            while owner == nil, hops < 32, let up = parent[p], up > 1 {
+                owner = roots[up]
+                p = up
+                hops += 1
+            }
+            if let owner { result[owner, default: 0] += cpuSeconds(pid: pid) }
+        }
+        for id in roots.values where result[id] == nil { result[id] = 0 }
+        return result
+    }
+
+    /// Does this process belong to the agent: its own command (claude, codex…) or node/python running it.
+    private func agent(_ rule: WatchRule, pid: pid_t, name: String) -> Bool {
+        let plain = rule.processes.filter { !$0.contains("/") && !$0.contains("@") }
+        if plain.contains(name) { return true }
+        guard Self.interpreters.contains(name) else { return false }
+        let args = Self.arguments(pid: pid).dropFirst()
+        return args.prefix(3).contains { arg in
+            let base = (arg as NSString).lastPathComponent
+            return plain.contains(base) || rule.processes.contains { $0.contains("@") && arg.contains($0) }
+        }
+    }
+
+    /// Command-line arguments of a process (KERN_PROCARGS2).
+    private static func arguments(pid: pid_t) -> [String] {
+        var mib: [Int32] = [CTL_KERN, KERN_PROCARGS2, pid]
+        var size = 0
+        guard sysctl(&mib, 3, nil, &size, nil, 0) == 0, size > 4 else { return [] }
+        var buffer = [UInt8](repeating: 0, count: size)
+        guard sysctl(&mib, 3, &buffer, &size, nil, 0) == 0 else { return [] }
+        let argc = Int(buffer.withUnsafeBytes { $0.load(as: Int32.self) })
+        var i = MemoryLayout<Int32>.size
+        while i < size, buffer[i] != 0 { i += 1 }      // executable path
+        while i < size, buffer[i] == 0 { i += 1 }      // padding
+        var args: [String] = []
+        var start = i
+        while i < size, args.count < min(argc, 8) {
+            if buffer[i] == 0 {
+                args.append(String(decoding: buffer[start..<i], as: UTF8.self))
+                start = i + 1
+            }
+            i += 1
+        }
+        return args
     }
 
     // MARK: Process accounting

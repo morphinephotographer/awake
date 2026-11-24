@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "apps": [
   {
    "id": "photoshop",
@@ -703,6 +703,147 @@
    ],
    "mode": "open",
    "category": "stream"
+  },
+  {
+   "id": "claudecode",
+   "title": "Claude Code",
+   "bundles": [],
+   "names": [],
+   "processes": [
+    "claude",
+    "@anthropic-ai/claude-code"
+   ],
+   "icon": [
+    "com.anthropic.claudefordesktop"
+   ],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "codexcli",
+   "title": "Codex CLI",
+   "bundles": [],
+   "names": [],
+   "processes": [
+    "codex",
+    "@openai/codex"
+   ],
+   "icon": [
+    "com.openai.codex",
+    "com.openai.chat"
+   ],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "geminicli",
+   "title": "Gemini CLI",
+   "bundles": [],
+   "names": [],
+   "processes": [
+    "gemini",
+    "@google/gemini-cli"
+   ],
+   "icon": [],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "aider",
+   "title": "Aider",
+   "bundles": [],
+   "names": [],
+   "processes": [
+    "aider",
+    "aider-chat"
+   ],
+   "icon": [],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "opencode",
+   "title": "OpenCode",
+   "bundles": [],
+   "names": [],
+   "processes": [
+    "opencode",
+    "opencode-ai"
+   ],
+   "icon": [],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "cursoragent",
+   "title": "Cursor Agent",
+   "bundles": [],
+   "names": [],
+   "processes": [
+    "cursor-agent"
+   ],
+   "icon": [
+    "com.todesktop.230313mzl4w4u92"
+   ],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "copilotcli",
+   "title": "Copilot CLI",
+   "bundles": [],
+   "names": [],
+   "processes": [
+    "copilot",
+    "@github/copilot"
+   ],
+   "icon": [],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "grokcli",
+   "title": "Grok CLI",
+   "bundles": [],
+   "names": [],
+   "processes": [
+    "grok",
+    "@vibe-kit/grok-cli"
+   ],
+   "icon": [],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "claudeapp",
+   "title": "Claude",
+   "bundles": [
+    "com.anthropic.claudefordesktop"
+   ],
+   "names": [],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "chatgpt",
+   "title": "ChatGPT",
+   "bundles": [
+    "com.openai.chat",
+    "com.openai.codex"
+   ],
+   "names": [],
+   "mode": "agent",
+   "category": "agents"
+  },
+  {
+   "id": "cursor",
+   "title": "Cursor",
+   "bundles": [
+    "com.todesktop.230313mzl4w4u92"
+   ],
+   "names": [],
+   "mode": "agent",
+   "category": "agents"
   }
  ]
 }

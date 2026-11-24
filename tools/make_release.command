@@ -24,7 +24,7 @@ REPO="morphinephotographer/awake."
   # Repository: public, with a description and topics
   gh repo edit "$REPO" --visibility public --accept-visibility-change-consequences && echo PUBLIC_OK
   gh repo edit "$REPO" \
-    --description "Keeps your Mac awake — right from the MacBook notch. Timers, render watcher for 60 creative apps, closed-lid mode." \
+    --description "Keeps your Mac awake — right from the MacBook notch. Timers, render watcher for 70 creative apps and AI agents (Claude Code, Codex…), closed-lid mode." \
     --add-topic macos --add-topic notch --add-topic swiftui --add-topic caffeine --add-topic amphetamine \
     --add-topic keep-awake --add-topic menubar --add-topic macbook && echo META_OK
 
