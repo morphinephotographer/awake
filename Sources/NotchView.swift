@@ -62,7 +62,7 @@ struct NotchView: View {
     var body: some View {
         let size = Layout.size(model)
         let c = Layout.corners(model.isExpanded)
-        let visible = model.hasNotch || model.earsVisible || model.isExpanded || model.intro
+        let visible = model.hasNotch || (model.earsVisible && !model.launching) || model.isExpanded || model.intro
 
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
@@ -75,7 +75,7 @@ struct NotchView: View {
                 } else if model.intro {
                     IntroContent(model: model)
                         .transition(.opacity.animation(.easeOut(duration: 0.2)))
-                } else if model.earsVisible {
+                } else if model.earsVisible && !model.launching {
                     CollapsedContent(model: model, awake: awake)
                         .transition(.opacity.animation(.easeOut(duration: 0.18)))
                 }
@@ -93,6 +93,7 @@ struct NotchView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(model.isExpanded ? Motion.grow : Motion.shrink, value: model.isExpanded)
         .environment(\.colorScheme, .dark)
+        .id(model.langVersion)
         .onAppear {
             model.earsVisible = awake.isActive
             model.dotOn = awake.isActive
@@ -154,6 +155,12 @@ private struct IntroContent: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            // Dawn inside the notch: a soft green light rising from its lower edge.
+            RadialGradient(colors: [Color.awakeGreen.opacity(0.30), Color.awakeGreen.opacity(0.08), .clear],
+                           center: .bottom, startRadius: 0, endRadius: model.notchSize.width * 0.55)
+                .scaleEffect(x: 1.6, y: 1, anchor: .bottom)
+                .opacity(model.introGlow ? 1 : 0)
+                .allowsHitTesting(false)
             HStack {
                 Spacer(minLength: 0)
                 (Text("awake").foregroundStyle(.white.opacity(0.92)) + Text(".").foregroundStyle(Color.awakeGreen))
@@ -210,9 +217,7 @@ private struct OnboardingContent: View {
             .padding(.horizontal, 16)
             .frame(height: model.notchSize.height)
 
-            Text(found.count == 1
-                 ? "Нашёл у тебя 1 программу — Mac не уснёт, пока она рендерит или экспортирует."
-                 : "Нашёл у тебя \(found.count) программ — Mac не уснёт, пока они рендерят или экспортируют.")
+            Text(Loc.foundApps(found.count))
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(.white.opacity(0.85))
                 .fixedSize(horizontal: false, vertical: true)
@@ -236,7 +241,7 @@ private struct OnboardingContent: View {
 
             HStack(spacing: 8) {
                 Button { model.finishOnboarding?(true) } label: {
-                    Text("Следить")
+                    Text(tr("Следить"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(Color.black)
                         .padding(.horizontal, 14)
@@ -245,7 +250,7 @@ private struct OnboardingContent: View {
                 }
                 .buttonStyle(PressStyle())
                 Button { model.finishOnboarding?(false) } label: {
-                    Text("Не нужно")
+                    Text(tr("Не нужно"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.7))
                         .padding(.horizontal, 14)
@@ -254,7 +259,7 @@ private struct OnboardingContent: View {
                 }
                 .buttonStyle(PressStyle())
                 Spacer(minLength: 0)
-                Text("настройка — в ⋯")
+                Text(tr("настройка — в ⋯"))
                     .font(.system(size: 10.5, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.4))
             }
@@ -282,7 +287,7 @@ private struct ExpandedContent: View {
                 Spacer(minLength: 0)
                 if awake.endingSoon {
                     Button { awake.adjust(by: 15 * 60) } label: {
-                        Text("+15м")
+                        Text(tr("+15м"))
                             .font(.system(size: 11, weight: .bold, design: .rounded))
                             .foregroundStyle(Color.black)
                             .padding(.horizontal, 8)
@@ -310,28 +315,28 @@ private struct ExpandedContent: View {
                     DurationTrack(awake: awake)
                     HStack(spacing: 4) {
                         IconButton(symbol: "arrow.clockwise", on: model.loginEnabled,
-                                   help: model.loginEnabled ? "Автозапуск включён" : "Запускать при входе в систему") {
+                                   help: model.loginEnabled ? tr("Автозапуск включён") : tr("Запускать при входе в систему")) {
                             LoginItem.toggle()
                             model.loginEnabled = LoginItem.isEnabled
                         }
                         IconButton(symbol: awake.keepDisplay ? "sun.max.fill" : "moon.fill",
                                    on: awake.keepDisplay,
-                                   help: awake.keepDisplay ? "Экран не гаснет" : "Экран может погаснуть, Mac не уснёт") {
+                                   help: awake.keepDisplay ? tr("Экран не гаснет") : tr("Экран может погаснуть, Mac не уснёт")) {
                             awake.setKeepDisplay(!awake.keepDisplay)
                         }
                         IconButton(symbol: "laptopcomputer", on: awake.lidMode,
-                                   help: awake.lidMode ? "Работает с закрытой крышкой" : "Работать с закрытой крышкой") {
+                                   help: awake.lidMode ? tr("Работает с закрытой крышкой") : tr("Работать с закрытой крышкой")) {
                             awake.setLidMode(!awake.lidMode)
                         }
                         IconButton(symbol: "film", on: awake.watcher.enabled,
-                                   help: awake.watcher.enabled ? "Следит за рендером в твоих программах" : "Не следить за программами") {
+                                   help: awake.watcher.enabled ? tr("Следит за рендером в твоих программах") : tr("Не следить за программами")) {
                             awake.setWatchEnabled(!awake.watcher.enabled)
                         }
                         Spacer(minLength: 0)
                         RunningApps(model: model, awake: awake)
                         Spacer(minLength: 0)
                         OptionsButton(model: model, awake: awake)
-                        IconButton(symbol: "xmark", on: false, danger: true, help: "Выйти из awake.") {
+                        IconButton(symbol: "xmark", on: false, danger: true, help: tr("Выйти из awake.")) {
                             awake.stop()
                             NSApp.terminate(nil)
                         }
@@ -357,24 +362,24 @@ private struct SettingsMenu: View {
         Toggle(isOn: Binding(
             get: { awake.isActive && awake.reason == .activity },
             set: { on in if on { awake.startActivity() } else { awake.stop() } }
-        )) { Label("Пока идёт работа", systemImage: "cpu") }
+        )) { Label(tr("Пока идёт работа"), systemImage: "cpu") }
 
         Menu {
             ForEach(NotchController.untilChoices(), id: \.self) { date in
-                Button("до \(Awake.hm.string(from: date))") { awake.start(until: date) }
+                Button(tr("до %@", Awake.hm.string(from: date))) { awake.start(until: date) }
             }
-        } label: { Label("До времени", systemImage: "clock") }
+        } label: { Label(tr("До времени"), systemImage: "clock") }
 
         if awake.isActive && awake.endDate != nil {
-            Button { awake.adjust(by: 15 * 60) } label: { Label("Ещё 15 минут", systemImage: "plus") }
-            Button { awake.adjust(by: -15 * 60) } label: { Label("Минус 15 минут", systemImage: "minus") }
+            Button { awake.adjust(by: 15 * 60) } label: { Label(tr("Ещё 15 минут"), systemImage: "plus") }
+            Button { awake.adjust(by: -15 * 60) } label: { Label(tr("Минус 15 минут"), systemImage: "minus") }
         }
 
         Divider()
 
         Menu {
             if awake.watcher.visibleRules.isEmpty {
-                Text("Нет знакомых программ")
+                Text(tr("Нет знакомых программ"))
             }
             ForEach(awake.watcher.visibleRules) { rule in
                 Picker(selection: Binding(
@@ -388,39 +393,51 @@ private struct SettingsMenu: View {
                 .pickerStyle(.menu)
             }
             Divider()
-            Button("Добавить программу…") { awake.watcher.addCustomApp() }
-        } label: { Label("Программы", systemImage: "film") }
+            Button(tr("Добавить программу…")) { awake.watcher.addCustomApp() }
+        } label: { Label(tr("Программы"), systemImage: "film") }
 
         Picker(selection: Binding(
             get: { awake.batteryLimit },
             set: { awake.setBatteryLimit($0) }
         )) {
-            Text("Никогда").tag(0)
+            Text(tr("Никогда")).tag(0)
             Text("10%").tag(10)
             Text("20%").tag(20)
             Text("30%").tag(30)
-        } label: { Label("Выключать при заряде", systemImage: "battery.25") }
+        } label: { Label(tr("Выключать при заряде"), systemImage: "battery.25") }
+        .pickerStyle(.menu)
+
+        Picker(selection: Binding(
+            get: { Loc.preference },
+            set: { Loc.set($0); model.langVersion += 1 }
+        )) {
+            Text(tr("Как в системе")).tag("auto")
+            Divider()
+            Text("English").tag("en")
+            Text("Українська").tag("uk")
+            Text("Русский").tag("ru")
+        } label: { Label(tr("Язык"), systemImage: "globe") }
         .pickerStyle(.menu)
 
         Divider()
 
         Menu {
-            Button("Скопировать ссылку для «Быстрых команд»") {
+            Button(tr("Скопировать ссылку для «Быстрых команд»")) {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString("awake://start?minutes=60", forType: .string)
             }
             if LidGuard.isInstalled {
-                Button("Удалить помощник закрытой крышки…") { awake.uninstallLidGuard() }
+                Button(tr("Удалить помощник закрытой крышки…")) { awake.uninstallLidGuard() }
             }
             Divider()
-            Text("⌥⌘A — включить или выключить")
-            Text("⌘Q на открытой панели — выйти")
-            Text("Колёсико над чёлкой — ±15 минут")
-            Text("Клик по ушку чёлки — выключить")
-        } label: { Label("Ещё", systemImage: "ellipsis.circle") }
+            Text(tr("⌥⌘A — включить или выключить"))
+            Text(tr("⌘Q на открытой панели — выйти"))
+            Text(tr("Колёсико над чёлкой — ±15 минут"))
+            Text(tr("Клик по ушку чёлки — выключить"))
+        } label: { Label(tr("Ещё"), systemImage: "ellipsis.circle") }
 
         Divider()
-        Text("awake. \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · создано Morphine")
+        Text(tr("awake. %@ · создано Morphine", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""))
     }
 }
 
@@ -446,7 +463,7 @@ private struct OptionsButton: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .onHover { hover = $0 }
-        .help("Ещё настройки")
+        .help(tr("Ещё настройки"))
     }
 }
 
@@ -467,7 +484,7 @@ private struct BigPower: View {
         }
         .buttonStyle(PressStyle())
         .onHover { hover = $0 }
-        .help(awake.isActive ? "Разрешить сон" : "Не давать Mac уснуть")
+        .help(awake.isActive ? tr("Разрешить сон") : tr("Не давать Mac уснуть"))
     }
 }
 
@@ -693,15 +710,15 @@ private struct SuggestionBadge: View {
         .buttonStyle(PressStyle())
         .popover(isPresented: $show, arrowEdge: .bottom) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Следить за \(suggestion.title)?").font(.system(size: 13, weight: .semibold))
-                Text("\(suggestion.title) \(suggestion.reason). awake. может не давать Mac уснуть, пока программа работает, и отпускать сон через 2 минуты после окончания.")
+                Text(tr("Следить за %@?", suggestion.title)).font(.system(size: 13, weight: .semibold))
+                Text(tr("%@ %@. awake. может не давать Mac уснуть, пока программа работает, и отпускать сон через 2 минуты после окончания.", suggestion.title, suggestion.reason))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
-                    Button("Не предлагать") { show = false; awake.watcher.dismiss(suggestion) }
+                    Button(tr("Не предлагать")) { show = false; awake.watcher.dismiss(suggestion) }
                     Spacer()
-                    Button("Следить") { show = false; awake.watcher.accept(suggestion) }
+                    Button(tr("Следить")) { show = false; awake.watcher.accept(suggestion) }
                         .keyboardShortcut(.defaultAction)
                 }
             }
@@ -723,7 +740,7 @@ private struct WatchInfo: View {
             HStack(spacing: 8) {
                 Text(rule.title).font(.system(size: 13, weight: .semibold))
                 Spacer(minLength: 0)
-                Text(active ? "держит Mac" : "ждёт работы")
+                Text(active ? tr("держит Mac") : tr("ждёт работы"))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(active ? Color.awakeGreen : .secondary)
                     .padding(.horizontal, 7)
@@ -734,7 +751,7 @@ private struct WatchInfo: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Режим меняется в меню ⋯ → Программы.")
+            Text(tr("Режим меняется в меню ⋯ → Программы."))
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
         }
@@ -745,13 +762,13 @@ private struct WatchInfo: View {
     private var description: String {
         switch rule.mode {
         case .render:
-            return "Пока \(rule.title) рендерит или экспортирует — заметно нагружает процессор или записывает файлы — awake. не даёт Mac уснуть. Когда работа закончится, awake. подождёт 2 минуты и вернёт обычный сон. Если выключить ⏻ вручную, awake. включится снова только при следующем рендере."
+            return tr("Пока %@ рендерит или экспортирует — заметно нагружает процессор или записывает файлы — awake. не даёт Mac уснуть. Когда работа закончится, awake. подождёт 2 минуты и вернёт обычный сон. Если выключить ⏻ вручную, awake. включится снова только при следующем рендере.", rule.title)
         case .download:
-            return "Пока \(rule.title) качает файлы, Mac не уснёт. После окончания загрузки awake. подождёт 2 минуты и вернёт обычный сон."
+            return tr("Пока %@ качает файлы, Mac не уснёт. После окончания загрузки awake. подождёт 2 минуты и вернёт обычный сон.", rule.title)
         case .open:
-            return "Пока \(rule.title) открыт, Mac не уснёт. Закроешь программу — сон вернётся."
+            return tr("Пока %@ открыт, Mac не уснёт. Закроешь программу — сон вернётся.", rule.title)
         case .off:
-            return "awake. не следит за этой программой."
+            return tr("awake. не следит за этой программой.")
         }
     }
 }

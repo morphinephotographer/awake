@@ -4,7 +4,8 @@
 
 <p align="center">
   <a href="https://github.com/morphinephotographer/awake./releases/latest"><b>Download for macOS</b></a> ·
-  <a href="README.ru.md">Русская версия</a>
+  <a href="README.uk.md">Українська</a> ·
+  <a href="README.ru.md">Русский</a>
 </p>
 
 <p align="center">
@@ -27,8 +28,7 @@
 - **Shortcuts.** ⌥⌘A toggles from anywhere, scroll over the notch adds or removes 15 minutes, ⌘Q quits while the panel is open.
 - **Automation.** `awake://start?minutes=90`, `awake://until?time=18:30`, `awake://activity`, `awake://toggle`, `awake://stop` — use them in the Shortcuts app.
 - **Tiny.** Native SwiftUI, no background CPU when idle, ~20–40 MB of memory.
-
-> The interface is in Russian for now.
+- **Speaks your language.** English, Ukrainian and Russian — picks the macOS language automatically, or choose it in ⋯ → **Language**.
 
 ## Supported apps
 
@@ -42,7 +42,7 @@
 | Downloads | Transmission, qBittorrent, Motrix, Folx, Downie, µTorrent, JDownloader, Free Download Manager, toreo. | while downloading |
 | Streaming & recording | Teleo., OBS, Ecamm Live | while open |
 
-Every app can be switched between *render & export*, *downloads*, *while open* and *off* in ⋯ → **Программы** (Apps). Any other app can be added by hand. The list lives in [`Resources/catalog.json`](Resources/catalog.json) and is refreshed from this repository once a week — pull requests with new apps are welcome.
+Every app can be switched between *render & export*, *downloads*, *while open* and *off* in ⋯ → **Apps**. Any other app can be added by hand. The list lives in [`Resources/catalog.json`](Resources/catalog.json) and is refreshed from this repository once a week — pull requests with new apps are welcome.
 
 **How “working” is detected:** the app asks macOS not to sleep (many exporters do), or all its processes together use more than 0.6 CPU core or write more than 2 MB/s to disk (150 KB/s for download apps).
 
@@ -60,7 +60,7 @@ awake. collects nothing. The only network request is a weekly download of the ap
 
 ## Remove the closed-lid helper
 
-⋯ → **Ещё** (More) → *Удалить помощник закрытой крышки…* (Remove closed-lid helper), or in Terminal:
+⋯ → **More** → *Remove closed-lid helper…*, or in Terminal:
 
 ```sh
 sudo launchctl bootout system/local.morphine.awake.guard

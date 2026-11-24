@@ -21,8 +21,8 @@ final class Awake {
     static func label(_ d: TimeInterval) -> String {
         switch d {
         case 0: return "∞"
-        case ..<3600: return "\(Int(d / 60))м"
-        default: return "\(Int(d / 3600))ч"
+        case ..<3600: return tr("%ldм", Int(d / 60))
+        default: return tr("%ldч", Int(d / 3600))
         }
     }
 
@@ -189,36 +189,36 @@ final class Awake {
         guard isActive else { return "" }
         switch reason {
         case .apps: return watchVerb
-        case .activity: return "раб"
+        case .activity: return tr("раб")
         case .manual: break
         }
         guard let r = remaining else { return "∞" }
         let s = Int(r.rounded(.up))
         let h = s / 3600, m = (s % 3600) / 60, sec = s % 60
-        return h > 0 ? "\(h)ч\(String(format: "%02d", m))" : String(format: "%d:%02d", m, sec)
+        return h > 0 ? tr("%ldч%@", h, String(format: "%02d", m)) : String(format: "%d:%02d", m, sec)
     }
 
     var longText: String {
-        guard isActive else { return "выкл" }
+        guard isActive else { return tr("выкл") }
         switch reason {
         case .apps: return watchVerb
-        case .activity: return "работа"
+        case .activity: return tr("работа")
         case .manual: break
         }
-        guard let r = remaining else { return "не спит" }
+        guard let r = remaining else { return tr("не спит") }
         let s = Int(r.rounded(.up))
         return String(format: "%d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
     }
 
     /// "рендер" / "качает" / "открыт" for the first app that keeps the Mac awake.
     var watchVerb: String {
-        watcher.active.first.flatMap { watcher.rule($0)?.mode.verb } ?? "авто"
+        watcher.active.first.flatMap { watcher.rule($0)?.mode.verb } ?? tr("авто")
     }
 
     var untilText: String {
         guard isActive else { return "" }
-        guard let end = endDate else { return "без ограничений" }
-        return "до \(Self.hm.string(from: end))"
+        guard let end = endDate else { return tr("без ограничений") }
+        return tr("до %@", Self.hm.string(from: end))
     }
 
     static let hm: DateFormatter = {
@@ -461,7 +461,7 @@ enum LidGuard {
     static func install() -> Bool {
         guard let res = Bundle.main.resourcePath else { return false }
         let cmd = "/bin/sh " + quote(res + "/install-guard.sh") + " \(getuid()) " + quote(res)
-        return runAsAdmin(cmd, prompt: "awake. хочет, чтобы Mac работал с закрытой крышкой.") && isInstalled
+        return runAsAdmin(cmd, prompt: tr("awake. хочет, чтобы Mac работал с закрытой крышкой.")) && isInstalled
     }
 
     /// Removes the guard (admin password prompt) and turns disablesleep off if it was on.
@@ -469,7 +469,7 @@ enum LidGuard {
     static func uninstall() -> Bool {
         guard let res = Bundle.main.resourcePath else { return false }
         let cmd = "/bin/sh " + quote(res + "/uninstall-guard.sh")
-        return runAsAdmin(cmd, prompt: "awake. удалит помощник для закрытой крышки.") && !isInstalled
+        return runAsAdmin(cmd, prompt: tr("awake. удалит помощник для закрытой крышки.")) && !isInstalled
     }
 
     @MainActor

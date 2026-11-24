@@ -1,8 +1,8 @@
-awake. 1.5.0 — public release
+awake. 1.6.0 — languages
 
-English and Russian README with banner, supported-apps table, install notes.
-DMG with a designed window (tools/dmg_settings.py, dmgbuild) and a release script.
-Catalog entries get categories.
+English, Ukrainian and Russian interface (follows macOS, selectable in ⋯ → Language),
+README.uk.md, launch glow inside the notch, nothing drawn in the notch until the
+launch animation is over (fixes the app icon flashing first).
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN

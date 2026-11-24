@@ -23,6 +23,10 @@ final class NotchModel {
     var introLine = false
     /// First launch: "found N apps" card.
     var onboarding = false
+    /// True until the launch animation has finished: nothing else is drawn in the notch.
+    var launching = true
+    /// Bumped when the interface language changes, so every view redraws.
+    var langVersion = 0
     @ObservationIgnored var finishOnboarding: ((Bool) -> Void)?
 }
 
@@ -39,14 +43,14 @@ enum Layout {
             return CGSize(width: max(n.width + 160, 352), height: n.height + (model.onboarding ? 116 : 80))
         }
         if model.intro { return CGSize(width: n.width + introWing * 2, height: n.height) }
-        if model.earsVisible { return CGSize(width: n.width + ear, height: n.height) }
+        if model.earsVisible && !model.launching { return CGSize(width: n.width + ear, height: n.height) }
         // Exactly the hardware notch (flares included), so it is invisible when idle.
         return CGSize(width: max(0, n.width - corners(false).top * 2), height: n.height)
     }
 
     /// Collapsed with the ear: the shape is shifted right so the notch stays in place.
     static func offsetX(_ model: NotchModel) -> CGFloat {
-        (!model.isExpanded && !model.intro && model.earsVisible) ? ear / 2 : 0
+        (!model.isExpanded && !model.intro && !model.launching && model.earsVisible) ? ear / 2 : 0
     }
 
     static func corners(_ expanded: Bool) -> (top: CGFloat, bottom: CGFloat) {
@@ -171,6 +175,7 @@ final class NotchController {
             try? await Task.sleep(for: .milliseconds(350))
             withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.9)) { self.model.intro = false }
             try? await Task.sleep(for: .milliseconds(900))
+            withAnimation(Motion.ears) { self.model.launching = false }
             self.startOnboardingIfNeeded()
         }
     }
@@ -309,7 +314,7 @@ final class NotchController {
 
     /// The single (right) ear of the collapsed notch, in screen coordinates.
     private func earRects() -> [CGRect] {
-        guard model.earsVisible, !model.isExpanded, !model.intro else { return [] }
+        guard model.earsVisible, !model.isExpanded, !model.intro, !model.launching else { return [] }
         let n = model.notchSize
         return [CGRect(x: midX + n.width / 2, y: top - n.height, width: Layout.ear, height: n.height + 2)]
     }

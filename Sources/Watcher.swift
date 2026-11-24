@@ -10,27 +10,27 @@ enum WatchMode: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .render: return "Пока работает (рендер, экспорт)"
-        case .download: return "Пока качает"
-        case .open: return "Пока открыто"
-        case .off: return "Не следить"
+        case .render: return tr("Пока работает (рендер, экспорт)")
+        case .download: return tr("Пока качает")
+        case .open: return tr("Пока открыто")
+        case .off: return tr("Не следить")
         }
     }
 
     var short: String {
         switch self {
-        case .render: return "Рендер и экспорт"
-        case .download: return "Загрузка"
-        case .open: return "Пока открыта"
-        case .off: return "Не следить"
+        case .render: return tr("Рендер и экспорт")
+        case .download: return tr("Загрузка")
+        case .open: return tr("Пока открыта")
+        case .off: return tr("Не следить")
         }
     }
 
     var verb: String {
         switch self {
-        case .render: return "рендер"
-        case .download: return "качает"
-        case .open: return "открыт"
+        case .render: return tr("рендер")
+        case .download: return tr("качает")
+        case .open: return tr("открыт")
         case .off: return ""
         }
     }
@@ -129,7 +129,7 @@ final class Watcher {
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = false
-        panel.prompt = "Следить"
+        panel.prompt = tr("Следить")
         NSApp.activate(ignoringOtherApps: true)
         guard panel.runModal() == .OK, let url = panel.url,
               let id = Bundle(url: url)?.bundleIdentifier else { return }
@@ -328,7 +328,7 @@ final class Watcher {
             let name = app.localizedName ?? id
             let prefix = path.hasSuffix("/") ? path : path + "/"
             if blockers.contains(where: { $0.hasPrefix(prefix) }) {
-                found.append(WatchSuggestion(id: id, title: name, reason: "сам просит Mac не засыпать"))
+                found.append(WatchSuggestion(id: id, title: name, reason: tr("сам просит Mac не засыпать")))
                 continue
             }
             let cpu = cpuSeconds(pid: app.processIdentifier)
@@ -342,7 +342,7 @@ final class Watcher {
             }
             strangerCPU[id] = (cpu, now)
             if let since = strangerBusySince[id], now.timeIntervalSince(since) >= 60 {
-                found.append(WatchSuggestion(id: id, title: name, reason: "больше минуты сильно грузит процессор"))
+                found.append(WatchSuggestion(id: id, title: name, reason: tr("больше минуты сильно грузит процессор")))
             }
         }
         let runningIDs = Set(apps.compactMap(\.bundleIdentifier))
