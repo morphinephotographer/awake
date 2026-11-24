@@ -1,10 +1,7 @@
-awake. 1.7.0 — AI agents
+awake. 1.7.1 — hide the app icon from the notch
 
-New mode «while the agent works». Terminal agents (Claude Code, Codex CLI, Gemini CLI,
-Aider, OpenCode, Cursor Agent, Copilot CLI, Grok CLI) are found among the user's
-processes (own command or node/python running it); busy = the agent and everything
-it started use > 3 % of a core. Agent apps (Claude, ChatGPT, Cursor): > 0.08 core or
-their own sleep assertion. 3-minute grace. Catalog v2 (71 apps), README in 3 languages.
+Setting in ⋯ → Apps: «App icon in the notch». Off → while a watched app keeps the Mac
+awake, the collapsed notch shows nothing; icons stay in the open panel.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014WsSJBqUtcoU9dVQdZn5wN

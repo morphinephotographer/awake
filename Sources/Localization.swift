@@ -54,6 +54,7 @@ enum Loc {
     /// Russian source string → translation.
     static let table: [String: [String: String]] = [
         "en": [
+            "Иконка программы в чёлке": "App icon in the notch",
             "Пока агент работает": "While the agent works",
             "Агент работает": "Agent at work",
             "агент": "agent",
@@ -134,6 +135,7 @@ enum Loc {
             "Как в системе": "Same as macOS"
         ],
         "uk": [
+            "Иконка программы в чёлке": "Іконка програми у вирізі",
             "Пока агент работает": "Поки агент працює",
             "Агент работает": "Агент працює",
             "агент": "агент",

@@ -62,7 +62,7 @@ struct NotchView: View {
     var body: some View {
         let size = Layout.size(model)
         let c = Layout.corners(model.isExpanded)
-        let visible = model.hasNotch || (model.earsVisible && !model.launching) || model.isExpanded || model.intro
+        let visible = model.hasNotch || model.earShown || model.isExpanded || model.intro
 
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
@@ -79,7 +79,7 @@ struct NotchView: View {
                 } else if model.intro {
                     IntroContent(model: model)
                         .transition(.opacity.animation(.easeOut(duration: 0.2)))
-                } else if model.earsVisible && !model.launching {
+                } else if model.earShown {
                     CollapsedContent(model: model, awake: awake)
                         .transition(.opacity.animation(.easeOut(duration: 0.18)))
                 }
@@ -106,7 +106,11 @@ struct NotchView: View {
         .id(model.langVersion)
         .onAppear {
             model.earsVisible = awake.isActive
+            model.appsMode = awake.isActive && awake.reason == .apps
             model.dotOn = awake.isActive
+        }
+        .onChange(of: awake.isActive && awake.reason == .apps) { _, apps in
+            withAnimation(Motion.ears) { model.appsMode = apps }
         }
         .onChange(of: awake.isActive) { _, active in
             if active {
@@ -417,6 +421,14 @@ private struct SettingsMenu: View {
         Divider()
 
         Menu {
+            Toggle(tr("Иконка программы в чёлке"), isOn: Binding(
+                get: { model.iconInNotch },
+                set: { on in
+                    UserDefaults.standard.set(on, forKey: "iconInNotch")
+                    withAnimation(Motion.ears) { model.iconInNotch = on }
+                }
+            ))
+            Divider()
             if awake.watcher.visibleRules.isEmpty {
                 Text(tr("Нет знакомых программ"))
             }

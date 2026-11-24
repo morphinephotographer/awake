@@ -13,6 +13,12 @@ final class NotchModel {
     var loginEnabled = LoginItem.isEnabled
     /// Side "ears" with the eye and the timer (lag behind Awake.isActive for the closing-eye animation).
     var earsVisible = false
+    /// The Mac is kept awake by a watched app right now.
+    var appsMode = false
+    /// Show the app's icon in the collapsed notch (setting). Off → only in the open panel.
+    var iconInNotch = UserDefaults.standard.object(forKey: "iconInNotch") as? Bool ?? true
+    /// The right ear of the collapsed notch is actually drawn.
+    var earShown: Bool { earsVisible && !launching && !(appsMode && !iconInNotch) }
     var dotOn = false
     /// A popover over an app icon is open — keep the panel expanded.
     var popoverOpen = false
@@ -46,14 +52,14 @@ enum Layout {
             return CGSize(width: max(n.width + 160, 352), height: n.height + (model.onboarding ? 116 : 80))
         }
         if model.intro { return CGSize(width: n.width + introWing * 2, height: n.height + introDrop) }
-        if model.earsVisible && !model.launching { return CGSize(width: n.width + ear, height: n.height) }
+        if model.earShown { return CGSize(width: n.width + ear, height: n.height) }
         // Exactly the hardware notch (flares included), so it is invisible when idle.
         return CGSize(width: max(0, n.width - corners(false).top * 2), height: n.height)
     }
 
     /// Collapsed with the ear: the shape is shifted right so the notch stays in place.
     static func offsetX(_ model: NotchModel) -> CGFloat {
-        (!model.isExpanded && !model.intro && !model.launching && model.earsVisible) ? ear / 2 : 0
+        (!model.isExpanded && !model.intro && model.earShown) ? ear / 2 : 0
     }
 
     static func corners(_ expanded: Bool) -> (top: CGFloat, bottom: CGFloat) {
@@ -309,7 +315,7 @@ final class NotchController {
             if inside || model.menuOpen || model.popoverOpen || model.onboarding { cancelPending() } else { schedule(.collapse, ms: 260) }
         } else {
             // With ears out only the notch itself expands the panel; the ears take clicks and scrolls.
-            let hotSize = model.earsVisible ? model.notchSize : Layout.size(model)
+            let hotSize = model.earShown ? model.notchSize : Layout.size(model)
             let hot = rect(hotSize).insetBy(dx: -4, dy: 0).contains(p)
             if hot { schedule(.expand, ms: 60) } else { cancelPending() }
         }
@@ -317,7 +323,7 @@ final class NotchController {
 
     /// The single (right) ear of the collapsed notch, in screen coordinates.
     private func earRects() -> [CGRect] {
-        guard model.earsVisible, !model.isExpanded, !model.intro, !model.launching else { return [] }
+        guard model.earShown, !model.isExpanded, !model.intro else { return [] }
         let n = model.notchSize
         return [CGRect(x: midX + n.width / 2, y: top - n.height, width: Layout.ear, height: n.height + 2)]
     }
